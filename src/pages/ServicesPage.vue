@@ -30,6 +30,7 @@ const companySettings = ref<any>(null)
 const companyData = ref<any>(null)
 const monthError = ref('')
 const monthLoading = ref(true)
+const calendarLoaded = ref(false)
 
 // Filtros de búsqueda
 const searchQuery = ref('')
@@ -38,6 +39,7 @@ const selectedModalityFilter = ref('')
 
 const holidayDates = ref<string[]>([])
 const cancelledDates = ref<string[]>([])
+const cancelledServices = ref<{ date: string; service_id: string }[]>([])
 const reservationDates = ref<string[]>([])
 const userBookings = ref<{ date: string; service_id: string }[]>([])
 const dayNames = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado']
@@ -116,6 +118,15 @@ const bookedServiceIds = computed(() => {
   )
 })
 
+// Servicios cancelados para el día seleccionado
+const cancelledServiceKeys = computed(() => {
+  return new Set(
+    cancelledServices.value
+      .filter(c => c.date === selectedDate.value)
+      .map(c => c.service_id)
+  )
+})
+
 // Gym schedule for the selected day
 const gymSchedule = computed(() => {
   if (!companySettings.value?.gym_mode || !companyData.value?.gym_schedule) return null
@@ -177,10 +188,11 @@ async function loadMonthData() {
   try {
     const { data } = await supabase
       .from('cancelled_service_sessions')
-      .select('date')
+      .select('date, service_id')
       .eq('company_id', authStore.companyId)
       .gte('date', startDate)
       .lt('date', endDate)
+    cancelledServices.value = data || []
     cancelledDates.value = data?.map(c => c.date) || []
   } catch { monthError.value = 'Error al cargar sesiones canceladas' }
 
@@ -198,6 +210,7 @@ async function loadMonthData() {
     } catch { monthError.value = 'Error al cargar tus reservas' }
   }
   monthLoading.value = false
+  calendarLoaded.value = true
 }
 
 async function checkHoliday() {
@@ -255,7 +268,7 @@ const getModalityIcon = (a: boolean, v: boolean) => {
 
     <div v-if="monthError" class="rounded-lg p-4 mb-6" style="background-color: #fef2f2; color: #991b1b">{{ monthError }}</div>
 
-    <div v-if="monthLoading" class="rounded-lg shadow p-4 mb-6 animate-pulse" style="background-color: var(--color-surface)">
+    <div v-if="!calendarLoaded && monthLoading" class="rounded-lg shadow p-4 mb-6 animate-pulse" style="background-color: var(--color-surface)">
       <div class="flex justify-between mb-4">
         <div class="h-5 rounded w-32" style="background-color: var(--color-primary-subtle)"></div>
         <div class="h-5 rounded w-16" style="background-color: var(--color-primary-subtle)"></div>
@@ -390,6 +403,12 @@ const getModalityIcon = (a: boolean, v: boolean) => {
             <template v-if="isGymMode && hasFreePass">
               <span class="text-sm px-3 py-1 rounded" style="background-color: var(--color-primary-subtle); color: var(--color-primary)">
                 🎫 Acceso libre
+              </span>
+            </template>
+            <!-- Sesión cancelada -->
+            <template v-else-if="cancelledServiceKeys.has(svc.id)">
+              <span class="px-4 py-2 rounded-lg text-sm font-medium" style="background-color: #fef2f2; color: #991b1b">
+                ⛔ Sesión cancelada
               </span>
             </template>
             <!-- Ya reservado -->
