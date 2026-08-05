@@ -28,6 +28,13 @@ const form = ref({
 const creditUserId = ref<string | null>(null)
 const creditAmount = ref(0)
 const showCreditModal = ref(false)
+const customerSearch = ref('')
+
+const filteredCustomers = computed(() => {
+  if (!customerSearch.value) return customers.value
+  const q = customerSearch.value.toLowerCase()
+  return customers.value.filter(c => c.name.toLowerCase().includes(q) || c.email?.toLowerCase().includes(q) || c.phone?.includes(q))
+})
 const creditModalData = ref<{ userId: string; userName: string; amount: number } | null>(null)
 
 // Paginación
@@ -35,9 +42,9 @@ const currentPage = ref(1)
 const pageSize = 20
 const paginatedCustomers = computed(() => {
   const start = (currentPage.value - 1) * pageSize
-  return customers.value.slice(start, start + pageSize)
+  return filteredCustomers.value.slice(start, start + pageSize)
 })
-const totalPages = computed(() => Math.ceil(customers.value.length / pageSize))
+const totalPages = computed(() => Math.ceil(filteredCustomers.value.length / pageSize))
 
 onMounted(() => fetchCustomers())
 
@@ -239,12 +246,24 @@ function handleExportCSV() {
     <SkeletonTable v-if="loading" :rows="5" :cols="6" />
 
     <!-- Tabla -->
-    <div v-else-if="customers.length === 0" class="rounded-lg shadow p-8 text-center" style="background-color: var(--color-surface)">
+    <div v-if="customers.length === 0 && !loading" class="rounded-lg shadow p-8 text-center" style="background-color: var(--color-surface)">
       <p style="color: var(--color-text-muted)">No hay clientes creados.</p>
     </div>
 
-    <!-- Desktop: tabla -->
-    <div v-else class="hidden md:block rounded-lg shadow overflow-hidden" style="background-color: var(--color-surface)">
+    <template v-if="customers.length > 0 && !loading">
+      <!-- Búsqueda -->
+      <div class="mb-4">
+        <input v-model="customerSearch" type="text" placeholder="🔍 Buscar por nombre, email o teléfono..."
+          class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2"
+          :style="{ borderColor: 'var(--color-border)', '--tw-ring-color': 'var(--color-primary)' }" />
+      </div>
+
+      <!-- Desktop: tabla -->
+      <div v-if="filteredCustomers.length === 0" class="rounded-lg shadow p-8 text-center" style="background-color: var(--color-surface)">
+        <p style="color: var(--color-text-muted)">No se encontraron clientes</p>
+      </div>
+
+      <div v-else class="hidden md:block rounded-lg shadow overflow-hidden" style="background-color: var(--color-surface)">
       <table class="min-w-full divide-y" :style="{ borderColor: 'var(--color-border)' }">
         <thead :style="{ backgroundColor: 'var(--color-primary-subtle)' }">
           <tr>
@@ -287,7 +306,7 @@ function handleExportCSV() {
       <PaginationBar
         :current-page="currentPage"
         :total-pages="totalPages"
-        :total-items="customers.length"
+        :total-items="filteredCustomers.length"
         :page-size="pageSize"
         @update:currentPage="currentPage = $event"
       />
@@ -318,7 +337,7 @@ function handleExportCSV() {
       <PaginationBar
         :current-page="currentPage"
         :total-pages="totalPages"
-        :total-items="customers.length"
+        :total-items="filteredCustomers.length"
         :page-size="pageSize"
         @update:currentPage="currentPage = $event"
       />

@@ -217,7 +217,25 @@ async function loadMonthData() {
       .gte('date', startDate)
       .lt('date', endDate)
     cancelledServices.value = data || []
-    cancelledDates.value = data?.map(c => c.date) || []
+
+    // cancelledDates: solo fechas donde TODOS los servicios están cancelados
+    const dateServiceMap = new Map<string, Set<string>>()
+    ;(data || []).forEach(c => {
+      if (!dateServiceMap.has(c.date)) dateServiceMap.set(c.date, new Set())
+      dateServiceMap.get(c.date)!.add(c.service_id)
+    })
+    cancelledDates.value = []
+    dateServiceMap.forEach((cancelledIds, date) => {
+      const dateObj = new Date(date + 'T12:00:00')
+      const dayName = dayNames[dateObj.getDay()]
+      const hasActiveServices = serviceStore.services.some(s => {
+        if (cancelledIds.has(s.id)) return false
+        if (s.frequency === 'weekly') return s.days_of_week?.includes(dayName as any)
+        if (s.frequency === 'one_time') return s.event_date === date
+        return true
+      })
+      if (!hasActiveServices) cancelledDates.value.push(date)
+    })
   } catch { monthError.value = 'Error al cargar sesiones canceladas' }
 
   if (authStore.user) {

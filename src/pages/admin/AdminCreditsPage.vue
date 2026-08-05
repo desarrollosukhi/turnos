@@ -3,7 +3,7 @@ import { useAuthStore } from '@/stores/auth'
 import { CreditService } from '@/services/CreditService'
 import { UserService } from '@/services/UserService'
 import SkeletonCard from '@/components/SkeletonCard.vue'
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import type { User } from '@/types'
 
 const authStore = useAuthStore()
@@ -13,6 +13,13 @@ const movements = ref<any[]>([])
 const loading = ref(true)
 const error = ref('')
 const creditForm = ref({ amount: 0, description: '' })
+const customerSearch = ref('')
+
+const filteredCustomers = computed(() => {
+  if (!customerSearch.value) return customers.value
+  const q = customerSearch.value.toLowerCase()
+  return customers.value.filter(c => c.name.toLowerCase().includes(q) || c.email?.toLowerCase().includes(q))
+})
 
 onMounted(async () => { await fetchCustomers(); loading.value = false })
 
@@ -47,13 +54,18 @@ async function handleDeduct() {
     <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div class="lg:col-span-1">
         <div class="rounded-lg shadow" style="background-color: var(--color-surface)">
-          <div class="p-4 border-b"><h2 class="font-semibold">Seleccionar Cliente</h2></div>
-          <div class="divide-y max-h-96 overflow-y-auto">
-            <button v-for="c in customers" :key="c.id" @click="selectCustomer(c)"
+          <div class="p-4 border-b"><h2 class="font-semibold mb-2">Seleccionar Cliente</h2>
+            <input v-model="customerSearch" type="text" placeholder="🔍 Buscar por nombre o email..."
+              class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2"
+              :style="{ borderColor: 'var(--color-border)', '--tw-ring-color': 'var(--color-primary)' }" />
+          </div>
+          <div class="divide-y max-h-80 overflow-y-auto">
+            <button v-for="c in filteredCustomers" :key="c.id" @click="selectCustomer(c)"
               :class="[selectedCustomer?.id === c.id ? 'bg-blue-50' : '', 'w-full text-left p-4 hover:bg-gray-50']">
               <div class="font-medium">{{ c.name }}</div>
               <div class="text-sm text-gray-500">{{ c.credits }} créditos</div>
             </button>
+            <div v-if="filteredCustomers.length === 0" class="p-4 text-center text-sm text-gray-500">No se encontraron clientes</div>
           </div>
         </div>
       </div>

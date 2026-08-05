@@ -13,6 +13,13 @@ const professionals = ref<Professional[]>([])
 const loading = ref(true)
 const error = ref('')
 const showForm = ref(false)
+const professionalSearch = ref('')
+
+const filteredProfessionals = computed(() => {
+  if (!professionalSearch.value) return professionals.value
+  const q = professionalSearch.value.toLowerCase()
+  return professionals.value.filter(p => p.name.toLowerCase().includes(q) || p.email?.toLowerCase().includes(q) || p.alias?.toLowerCase().includes(q))
+})
 const editingId = ref<string | null>(null)
 const createdCredentials = ref<{ email: string; tempPassword: string } | null>(null)
 const copied = ref(false)
@@ -25,9 +32,9 @@ const currentPage = ref(1)
 const pageSize = 20
 const paginatedProfessionals = computed(() => {
   const start = (currentPage.value - 1) * pageSize
-  return professionals.value.slice(start, start + pageSize)
+  return filteredProfessionals.value.slice(start, start + pageSize)
 })
-const totalPages = computed(() => Math.ceil(professionals.value.length / pageSize))
+const totalPages = computed(() => Math.ceil(filteredProfessionals.value.length / pageSize))
 
 onMounted(() => fetchProfessionals())
 
@@ -107,12 +114,24 @@ async function copyCredentials() {
 
     <SkeletonTable v-if="loading" :rows="5" :cols="4" />
 
-    <div v-else-if="professionals.length === 0" class="rounded-lg shadow p-8 text-center" style="background-color: var(--color-surface)">
+    <div v-if="professionals.length === 0 && !loading" class="rounded-lg shadow p-8 text-center" style="background-color: var(--color-surface)">
       <p style="color: var(--color-text-muted)">No hay {{ labels.professionals.toLowerCase() }} creados.</p>
     </div>
 
-    <!-- Desktop: tabla -->
-    <div v-else class="hidden md:block rounded-lg shadow overflow-hidden" style="background-color: var(--color-surface)">
+    <template v-if="professionals.length > 0 && !loading">
+      <!-- Búsqueda -->
+      <div class="mb-4">
+        <input v-model="professionalSearch" type="text" placeholder="🔍 Buscar por nombre, email o alias..."
+          class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2"
+          :style="{ borderColor: 'var(--color-border)', '--tw-ring-color': 'var(--color-primary)' }" />
+      </div>
+
+      <!-- Desktop: tabla -->
+      <div v-if="filteredProfessionals.length === 0" class="rounded-lg shadow p-8 text-center" style="background-color: var(--color-surface)">
+        <p style="color: var(--color-text-muted)">No se encontraron profesionales</p>
+      </div>
+
+      <div v-else class="hidden md:block rounded-lg shadow overflow-hidden" style="background-color: var(--color-surface)">
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
           <tr>
@@ -136,7 +155,7 @@ async function copyCredentials() {
       <PaginationBar
         :current-page="currentPage"
         :total-pages="totalPages"
-        :total-items="professionals.length"
+        :total-items="filteredProfessionals.length"
         :page-size="pageSize"
         @update:currentPage="currentPage = $event"
       />
