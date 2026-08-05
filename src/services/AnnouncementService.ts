@@ -3,12 +3,14 @@ import type { Announcement, AnnouncementWithDetails } from '@/types'
 
 export const AnnouncementService = {
   async getActive(companyId: string, userId?: string): Promise<AnnouncementWithDetails[]> {
+    console.log('[AnnouncementService] Fetching for company:', companyId, 'user:', userId)
     const { data, error } = await supabase
       .rpc('get_active_announcements', {
         p_company_id: companyId,
         p_user_id: userId || null,
       })
-    if (error) throw error
+    if (error) { console.error('[AnnouncementService] Error:', error); throw error }
+    console.log('[AnnouncementService] Result:', data)
     return data || []
   },
 

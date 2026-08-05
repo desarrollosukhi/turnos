@@ -52,7 +52,11 @@ onMounted(async () => {
     balance.value = bal
     // Filtrar anuncios descartados
     const dismissed = getDismissedIds()
+    console.log('[Home] User:', authStore.user?.id, 'Company:', authStore.companyId)
+    console.log('[Home] Announcements raw:', anns)
+    console.log('[Home] Dismissed IDs:', dismissed)
     announcements.value = anns.filter(a => !dismissed.includes(a.id))
+    console.log('[Home] Announcements after filter:', announcements.value)
     const today = new Date().toISOString().split('T')[0] ?? ''
     upcomingBookings.value = bookings
       .filter(b => b.status === 'pending' && b.date >= today)
