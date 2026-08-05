@@ -29,6 +29,7 @@ const selectedModality = ref<'in_person' | 'virtual' | null>(null)
 const companySettings = ref<any>(null)
 const companyData = ref<any>(null)
 const monthError = ref('')
+const monthLoading = ref(true)
 
 // Filtros de búsqueda
 const searchQuery = ref('')
@@ -158,6 +159,7 @@ watch(selectedDate, async () => {
 async function loadMonthData() {
   if (!authStore.companyId) return
 
+  monthLoading.value = true
   const date = new Date(selectedDate.value + 'T12:00:00')
   const year = date.getFullYear()
   const month = date.getMonth()
@@ -195,6 +197,7 @@ async function loadMonthData() {
       reservationDates.value = data?.map(b => b.date) || []
     } catch { monthError.value = 'Error al cargar tus reservas' }
   }
+  monthLoading.value = false
 }
 
 async function checkHoliday() {
@@ -252,7 +255,18 @@ const getModalityIcon = (a: boolean, v: boolean) => {
 
     <div v-if="monthError" class="rounded-lg p-4 mb-6" style="background-color: #fef2f2; color: #991b1b">{{ monthError }}</div>
 
+    <div v-if="monthLoading" class="rounded-lg shadow p-4 mb-6 animate-pulse" style="background-color: var(--color-surface)">
+      <div class="flex justify-between mb-4">
+        <div class="h-5 rounded w-32" style="background-color: var(--color-primary-subtle)"></div>
+        <div class="h-5 rounded w-16" style="background-color: var(--color-primary-subtle)"></div>
+      </div>
+      <div class="grid grid-cols-7 gap-1">
+        <div v-for="i in 35" :key="i" class="h-10 rounded" style="background-color: var(--color-primary-subtle)"></div>
+      </div>
+    </div>
+
     <MonthlyCalendar
+      v-else
       :selected-date="selectedDate"
       :holidays="holidayDates"
       :cancelled-dates="cancelledDates"
