@@ -5,6 +5,7 @@ const props = defineProps<{
   selectedDate: string
   holidays: string[]
   cancelledDates: string[]
+  partiallyCancelledDates: string[]
   reservationDates: string[]
   classDays: number[] // días de semana que tienen clases (0=dom, 1=lun, etc.)
 }>()
@@ -38,7 +39,7 @@ const weeks = computed(() => {
   const startDayOfWeek = firstDay.getDay() // 0=dom, 1=lun...
   const totalDays = lastDay.getDate()
 
-  const weeks: { date: string; dayOfMonth: number; isCurrentMonth: boolean; isToday: boolean; isSelected: boolean; hasClasses: boolean; isHoliday: boolean; isCancelled: boolean; hasReservation: boolean }[][] = []
+  const weeks: { date: string; dayOfMonth: number; isCurrentMonth: boolean; isToday: boolean; isSelected: boolean; hasClasses: boolean; isHoliday: boolean; isCancelled: boolean; isPartiallyCancelled: boolean; hasReservation: boolean }[][] = []
 
   let currentWeek: typeof weeks[0] = []
 
@@ -58,6 +59,7 @@ const weeks = computed(() => {
       hasClasses: props.classDays.includes(new Date(dateStr + 'T12:00:00').getDay()),
       isHoliday: props.holidays.includes(dateStr),
       isCancelled: props.cancelledDates.includes(dateStr),
+      isPartiallyCancelled: props.partiallyCancelledDates.includes(dateStr),
       hasReservation: props.reservationDates.includes(dateStr),
     })
   }
@@ -74,6 +76,7 @@ const weeks = computed(() => {
       hasClasses: props.classDays.includes(new Date(dateStr + 'T12:00:00').getDay()),
       isHoliday: props.holidays.includes(dateStr),
       isCancelled: props.cancelledDates.includes(dateStr),
+      isPartiallyCancelled: props.partiallyCancelledDates.includes(dateStr),
       hasReservation: props.reservationDates.includes(dateStr),
     })
 
@@ -99,6 +102,7 @@ const weeks = computed(() => {
         hasClasses: props.classDays.includes(new Date(dateStr + 'T12:00:00').getDay()),
         isHoliday: props.holidays.includes(dateStr),
         isCancelled: props.cancelledDates.includes(dateStr),
+        isPartiallyCancelled: props.partiallyCancelledDates.includes(dateStr),
         hasReservation: props.reservationDates.includes(dateStr),
       })
       nextDay++
@@ -200,11 +204,18 @@ const weekDays = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa', 'Do']
               title="Feriado"
             ></span>
 
-            <!-- Cancelled indicator -->
+            <!-- Cancelled indicator (todos los servicios) -->
             <span
               v-else-if="day.isCancelled && day.isCurrentMonth"
               class="w-1.5 h-1.5 rounded-full bg-gray-400"
-              title="Clase cancelada"
+              title="Todos los servicios cancelados"
+            ></span>
+
+            <!-- Partially cancelled indicator (algunos servicios) -->
+            <span
+              v-else-if="day.isPartiallyCancelled && day.isCurrentMonth"
+              class="w-1.5 h-1.5 rounded-full bg-orange-400"
+              title="Algunas clases canceladas"
             ></span>
 
             <!-- Has classes indicator -->
@@ -242,6 +253,10 @@ const weekDays = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa', 'Do']
       <div class="flex items-center space-x-1">
         <span class="w-2 h-2 rounded-full bg-gray-400"></span>
         <span>Cancelada</span>
+      </div>
+      <div class="flex items-center space-x-1">
+        <span class="w-2 h-2 rounded-full bg-orange-400"></span>
+        <span>Parcial</span>
       </div>
     </div>
   </div>

@@ -109,6 +109,7 @@ function openBookingModal(svc: ServiceWithProfessional) {
           :selected-date="selectedDate"
           :holidays="holidayDates"
           :cancelled-dates="[]"
+          :partially-cancelled-dates="[]"
           :reservation-dates="[]"
           :class-days="serviceDays"
           @select="handleCalendarSelect"

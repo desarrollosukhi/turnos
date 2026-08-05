@@ -29,6 +29,18 @@ const announcements = ref<AnnouncementWithDetails[]>([])
 const loading = ref(true)
 const error = ref('')
 
+// Anuncios descartados (localStorage)
+function getDismissedIds(): string[] {
+  try { return JSON.parse(localStorage.getItem('dismissed_announcements') || '[]') } catch { return [] }
+}
+
+function dismissAnnouncement(id: string) {
+  const dismissed = getDismissedIds()
+  dismissed.push(id)
+  localStorage.setItem('dismissed_announcements', JSON.stringify(dismissed))
+  announcements.value = announcements.value.filter(a => a.id !== id)
+}
+
 onMounted(async () => {
   if (!authStore.user) return
   try {
@@ -38,7 +50,9 @@ onMounted(async () => {
       AnnouncementService.getActive(authStore.companyId || '', authStore.user.id),
     ])
     balance.value = bal
-    announcements.value = anns
+    // Filtrar anuncios descartados
+    const dismissed = getDismissedIds()
+    announcements.value = anns.filter(a => !dismissed.includes(a.id))
     const today = new Date().toISOString().split('T')[0] ?? ''
     upcomingBookings.value = bookings
       .filter(b => b.status === 'pending' && b.date >= today)
@@ -72,6 +86,7 @@ onMounted(async () => {
                 <span v-if="a.service_name">· {{ a.service_name }}</span>
               </div>
             </div>
+            <button @click="dismissAnnouncement(a.id)" class="ml-2 text-sm cursor-pointer hover:opacity-80" style="color: var(--color-text-muted)">✕</button>
           </div>
         </div>
       </div>

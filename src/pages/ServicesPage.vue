@@ -127,6 +127,30 @@ const cancelledServiceKeys = computed(() => {
   )
 })
 
+// Fechas con cancelación parcial (algunos servicios cancelados, otros no)
+const partiallyCancelledDates = computed(() => {
+  const dateServiceMap = new Map<string, Set<string>>()
+  cancelledServices.value.forEach(c => {
+    if (!dateServiceMap.has(c.date)) dateServiceMap.set(c.date, new Set())
+    dateServiceMap.get(c.date)!.add(c.service_id)
+  })
+
+  const result: string[] = []
+  dateServiceMap.forEach((cancelledIds, date) => {
+    // Verificar si hay servicios activos en esa fecha que NO están cancelados
+    const dateObj = new Date(date + 'T12:00:00')
+    const dayName = dayNames[dateObj.getDay()]
+    const hasActiveServices = serviceStore.services.some(s => {
+      if (cancelledIds.has(s.id)) return false
+      if (s.frequency === 'weekly') return s.days_of_week?.includes(dayName as any)
+      if (s.frequency === 'one_time') return s.event_date === date
+      return true
+    })
+    if (hasActiveServices) result.push(date)
+  })
+  return result
+})
+
 // Gym schedule for the selected day
 const gymSchedule = computed(() => {
   if (!companySettings.value?.gym_mode || !companyData.value?.gym_schedule) return null
@@ -283,6 +307,7 @@ const getModalityIcon = (a: boolean, v: boolean) => {
       :selected-date="selectedDate"
       :holidays="holidayDates"
       :cancelled-dates="cancelledDates"
+      :partially-cancelled-dates="partiallyCancelledDates"
       :reservation-dates="reservationDates"
       :class-days="serviceDays"
       @select="handleCalendarSelect"
