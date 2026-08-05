@@ -6,7 +6,7 @@ import { useAuthStore } from '@/stores/auth'
 import { exportToCSV } from '@/utils/exportUtils'
 import PaginationBar from '@/components/PaginationBar.vue'
 import SkeletonTable from '@/components/SkeletonTable.vue'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import ToastMessage from '@/components/ToastMessage.vue'
 
 const authStore = useAuthStore()
@@ -33,6 +33,27 @@ const toastType = ref<'success' | 'error' | 'info'>('success')
 // Paginación
 const currentPage = ref(1)
 const pageSize = 20
+
+const dayNames = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado']
+
+// Servicios filtrados por fecha del modal de cancelación
+const servicesForDate = computed(() => {
+  if (!cancelSessionDate.value) return services.value
+  const date = new Date(cancelSessionDate.value + 'T12:00:00')
+  const dayName = dayNames[date.getDay()]
+  return services.value.filter(s => {
+    if (s.frequency === 'weekly') return s.days_of_week?.includes(dayName)
+    if (s.frequency === 'one_time') return s.event_date === cancelSessionDate.value
+    return true
+  })
+})
+
+// Reset servicio seleccionado si ya no está disponible en la nueva fecha
+watch(cancelSessionDate, () => {
+  if (cancelSessionService.value && !servicesForDate.value.find(s => s.id === cancelSessionService.value)) {
+    cancelSessionService.value = ''
+  }
+})
 
 onMounted(async () => {
   await Promise.all([fetchBookings(), fetchServices(), fetchProfessionals()])
@@ -235,7 +256,7 @@ function handleExportCSV() {
                 <label class="block text-sm font-medium mb-1" style="color: var(--color-text)">Servicio</label>
                 <select v-model="cancelSessionService" class="w-full px-3 py-2 border rounded-lg" :style="{ borderColor: 'var(--color-border)' }">
                   <option value="">Seleccionar servicio...</option>
-                  <option v-for="s in services" :key="s.id" :value="s.id">{{ s.name }}</option>
+                  <option v-for="s in servicesForDate" :key="s.id" :value="s.id">{{ s.name }}</option>
                 </select>
               </div>
               <div>
