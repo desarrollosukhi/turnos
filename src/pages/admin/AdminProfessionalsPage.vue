@@ -111,12 +111,13 @@ async function copyCredentials() {
       <p style="color: var(--color-text-muted)">No hay {{ labels.professionals.toLowerCase() }} creados.</p>
     </div>
 
-    <div v-else class="rounded-lg shadow overflow-hidden" style="background-color: var(--color-surface)">
+    <!-- Desktop: tabla -->
+    <div v-else class="hidden md:block rounded-lg shadow overflow-hidden" style="background-color: var(--color-surface)">
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
           <tr>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
-            <th class="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Alias</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Alias</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
           </tr>
@@ -124,7 +125,7 @@ async function copyCredentials() {
         <tbody class="divide-y divide-gray-200" style="background-color: var(--color-surface)">
           <tr v-for="p in paginatedProfessionals" :key="p.id">
             <td class="px-6 py-4 whitespace-nowrap font-medium">{{ p.name }}</td>
-            <td class="hidden md:table-cell px-6 py-4 whitespace-nowrap text-gray-500">{{ p.alias || '-' }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ p.alias || '-' }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ p.email || '-' }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm">
               <button @click="startEdit(p)" class="text-blue-600 hover:text-blue-800 mr-2">Editar</button>
@@ -132,6 +133,25 @@ async function copyCredentials() {
           </tr>
         </tbody>
       </table>
+      <PaginationBar
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        :total-items="professionals.length"
+        :page-size="pageSize"
+        @update:currentPage="currentPage = $event"
+      />
+    </div>
+
+    <!-- Mobile: cards -->
+    <div v-if="professionals.length > 0" class="md:hidden space-y-3">
+      <div v-for="p in paginatedProfessionals" :key="p.id" class="rounded-lg shadow p-4" style="background-color: var(--color-surface)">
+        <div class="flex justify-between items-start mb-1">
+          <div class="font-semibold" style="color: var(--color-text)">{{ p.name }}</div>
+          <button @click="startEdit(p)" class="text-xs px-2 py-1 rounded border" :style="{ borderColor: 'var(--color-border)', color: 'var(--color-primary)' }">✏️ Editar</button>
+        </div>
+        <div v-if="p.alias" class="text-sm mb-1" style="color: var(--color-text-muted)">Alias: {{ p.alias }}</div>
+        <div class="text-sm" style="color: var(--color-text-muted)">{{ p.email || 'Sin email' }}</div>
+      </div>
       <PaginationBar
         :current-page="currentPage"
         :total-pages="totalPages"
