@@ -41,6 +41,7 @@ const holidayDates = ref<string[]>([])
 const cancelledDates = ref<string[]>([])
 const cancelledServices = ref<{ date: string; service_id: string }[]>([])
 const reservationDates = ref<string[]>([])
+const attendedDates = ref<string[]>([])
 const userBookings = ref<{ date: string; service_id: string }[]>([])
 const dayNames = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado']
 
@@ -250,6 +251,18 @@ async function loadMonthData() {
       userBookings.value = data || []
       reservationDates.value = data?.map(b => b.date) || []
     } catch { monthError.value = 'Error al cargar tus reservas' }
+
+    // Cargar fechas donde el usuario asistió a todas las clases
+    try {
+      const { data: attended } = await supabase
+        .from('bookings')
+        .select('date')
+        .eq('user_id', authStore.user.id)
+        .gte('date', startDate)
+        .lt('date', endDate)
+        .eq('status', 'attended')
+      attendedDates.value = [...new Set(attended?.map(b => b.date) || [])]
+    } catch { /* ignore */ }
   }
   monthLoading.value = false
   calendarLoaded.value = true
@@ -327,6 +340,7 @@ const getModalityIcon = (a: boolean, v: boolean) => {
       :cancelled-dates="cancelledDates"
       :partially-cancelled-dates="partiallyCancelledDates"
       :reservation-dates="reservationDates"
+      :attended-dates="attendedDates"
       :class-days="serviceDays"
       @select="handleCalendarSelect"
       class="mb-6"

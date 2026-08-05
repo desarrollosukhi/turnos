@@ -7,14 +7,15 @@ const props = defineProps<{
   cancelledDates: string[]
   partiallyCancelledDates: string[]
   reservationDates: string[]
+  attendedDates: string[]
   classDays: number[] // días de semana que tienen clases (0=dom, 1=lun, etc.)
 }>()
+
+const today = new Date().toISOString().split('T')[0] ?? ''
 
 const emit = defineEmits<{
   select: [date: string]
 }>()
-
-const today = new Date().toISOString().split('T')[0]
 
 const currentMonth = computed(() => {
   const date = new Date(props.selectedDate + 'T12:00:00')
@@ -39,7 +40,7 @@ const weeks = computed(() => {
   const startDayOfWeek = firstDay.getDay() // 0=dom, 1=lun...
   const totalDays = lastDay.getDate()
 
-  const weeks: { date: string; dayOfMonth: number; isCurrentMonth: boolean; isToday: boolean; isSelected: boolean; hasClasses: boolean; isHoliday: boolean; isCancelled: boolean; isPartiallyCancelled: boolean; hasReservation: boolean }[][] = []
+  const weeks: { date: string; dayOfMonth: number; isCurrentMonth: boolean; isToday: boolean; isSelected: boolean; hasClasses: boolean; isHoliday: boolean; isCancelled: boolean; isPartiallyCancelled: boolean; hasReservation: boolean; isAttended: boolean; isPast: boolean }[][] = []
 
   let currentWeek: typeof weeks[0] = []
 
@@ -61,6 +62,8 @@ const weeks = computed(() => {
       isCancelled: props.cancelledDates.includes(dateStr),
       isPartiallyCancelled: props.partiallyCancelledDates.includes(dateStr),
       hasReservation: props.reservationDates.includes(dateStr),
+      isAttended: props.attendedDates.includes(dateStr),
+      isPast: dateStr < today,
     })
   }
 
@@ -78,6 +81,8 @@ const weeks = computed(() => {
       isCancelled: props.cancelledDates.includes(dateStr),
       isPartiallyCancelled: props.partiallyCancelledDates.includes(dateStr),
       hasReservation: props.reservationDates.includes(dateStr),
+      isAttended: props.attendedDates.includes(dateStr),
+      isPast: dateStr < today,
     })
 
     if (currentWeek.length === 7) {
@@ -104,6 +109,8 @@ const weeks = computed(() => {
         isCancelled: props.cancelledDates.includes(dateStr),
         isPartiallyCancelled: props.partiallyCancelledDates.includes(dateStr),
         hasReservation: props.reservationDates.includes(dateStr),
+        isAttended: props.attendedDates.includes(dateStr),
+        isPast: dateStr < today,
       })
       nextDay++
     }
@@ -188,9 +195,12 @@ const weekDays = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa', 'Do']
             day.isToday && !day.isSelected ? 'ring-1 ring-blue-300' : '',
             day.isHoliday && day.isCurrentMonth ? 'bg-red-50 border-2 border-red-300' : '',
             day.isCancelled && day.isCurrentMonth ? 'bg-gray-50 border-2 border-gray-300' : '',
+            day.isPartiallyCancelled && day.isCurrentMonth && !day.isSelected ? 'bg-orange-50 border-2 border-orange-300' : '',
             day.hasReservation && day.isCurrentMonth && !day.isSelected ? 'border-2 border-indigo-400 bg-indigo-50' : '',
-            !day.isHoliday && !day.isCancelled && day.hasClasses && day.isCurrentMonth && !day.hasReservation ? 'hover:bg-green-50 cursor-pointer' : '',
-            !day.hasClasses && day.isCurrentMonth && !day.isHoliday ? 'cursor-default' : '',
+            day.isAttended && day.isCurrentMonth && !day.isSelected ? 'border-2 border-emerald-400 bg-emerald-50' : '',
+            day.isPast && day.isCurrentMonth && !day.isSelected ? 'opacity-50 cursor-not-allowed' : '',
+            !day.isPast && !day.isHoliday && !day.isCancelled && day.hasClasses && day.isCurrentMonth && !day.hasReservation ? 'hover:bg-green-50 cursor-pointer' : '',
+            !day.hasClasses && day.isCurrentMonth && !day.isHoliday && !day.isPast ? 'cursor-default' : '',
           ]"
         >
           <span class="text-xs sm:text-sm">{{ day.dayOfMonth }}</span>
@@ -201,35 +211,42 @@ const weekDays = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa', 'Do']
             <span
               v-if="day.isHoliday && day.isCurrentMonth"
               class="w-1.5 h-1.5 rounded-full bg-red-500"
-              title="Feriado"
+              title="Feriado — No hay clases este día"
             ></span>
 
             <!-- Cancelled indicator (todos los servicios) -->
             <span
               v-else-if="day.isCancelled && day.isCurrentMonth"
               class="w-1.5 h-1.5 rounded-full bg-gray-400"
-              title="Todos los servicios cancelados"
+              title="Todos los servicios cancelados — No hay clases disponibles"
             ></span>
 
             <!-- Partially cancelled indicator (algunos servicios) -->
             <span
               v-else-if="day.isPartiallyCancelled && day.isCurrentMonth"
               class="w-1.5 h-1.5 rounded-full bg-orange-400"
-              title="Algunas clases canceladas"
+              title="Algunas clases canceladas — Hay otras disponibles"
+            ></span>
+
+            <!-- Attended indicator -->
+            <span
+              v-else-if="day.isAttended && day.isCurrentMonth"
+              class="w-1.5 h-1.5 rounded-full bg-emerald-500"
+              title="Asististe a todas las clases"
             ></span>
 
             <!-- Has classes indicator -->
             <span
               v-else-if="day.hasClasses && day.isCurrentMonth && !day.hasReservation"
               class="w-1.5 h-1.5 rounded-full bg-green-500"
-              title="Hay clases"
+              title="Hay clases disponibles — Hacé clic para ver servicios"
             ></span>
 
             <!-- Reservation indicator -->
             <span
               v-if="day.hasReservation && day.isCurrentMonth"
               class="w-1.5 h-1.5 rounded-full bg-indigo-500"
-              title="Reservado"
+              title="Tenés reserva este día"
             ></span>
           </div>
         </button>
@@ -238,25 +255,35 @@ const weekDays = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa', 'Do']
 
     <!-- Legend -->
     <div class="flex flex-wrap items-center justify-center gap-3 mt-4 text-xs text-gray-600">
-      <div class="flex items-center space-x-1">
+      <div class="flex items-center space-x-1 group relative">
         <span class="w-2 h-2 rounded-full bg-green-500"></span>
         <span>Libre</span>
+        <span class="hidden group-hover:inline-block absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-gray-800 rounded whitespace-nowrap z-10">Hay clases disponibles este día</span>
       </div>
-      <div class="flex items-center space-x-1">
+      <div class="flex items-center space-x-1 group relative">
         <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
         <span>Reservado</span>
+        <span class="hidden group-hover:inline-block absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-gray-800 rounded whitespace-nowrap z-10">Tenés una reserva pendiente</span>
       </div>
-      <div class="flex items-center space-x-1">
+      <div class="flex items-center space-x-1 group relative">
+        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+        <span>Asistido</span>
+        <span class="hidden group-hover:inline-block absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-gray-800 rounded whitespace-nowrap z-10">Asististe a todas las clases</span>
+      </div>
+      <div class="flex items-center space-x-1 group relative">
         <span class="w-2 h-2 rounded-full bg-red-500"></span>
         <span>Feriado</span>
+        <span class="hidden group-hover:inline-block absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-gray-800 rounded whitespace-nowrap z-10">Día feriado — no hay clases</span>
       </div>
-      <div class="flex items-center space-x-1">
+      <div class="flex items-center space-x-1 group relative">
         <span class="w-2 h-2 rounded-full bg-gray-400"></span>
         <span>Cancelada</span>
+        <span class="hidden group-hover:inline-block absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-gray-800 rounded whitespace-nowrap z-10">Todos los servicios cancelados</span>
       </div>
-      <div class="flex items-center space-x-1">
+      <div class="flex items-center space-x-1 group relative">
         <span class="w-2 h-2 rounded-full bg-orange-400"></span>
         <span>Parcial</span>
+        <span class="hidden group-hover:inline-block absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-gray-800 rounded whitespace-nowrap z-10">Algunas clases canceladas — hay otras disponibles</span>
       </div>
     </div>
   </div>

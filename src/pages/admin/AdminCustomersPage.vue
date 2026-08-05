@@ -5,6 +5,7 @@ import { getBusinessLabels } from '@/types'
 import { exportToCSV } from '@/utils/exportUtils'
 import SkeletonTable from '@/components/SkeletonTable.vue'
 import PaginationBar from '@/components/PaginationBar.vue'
+import ToastMessage from '@/components/ToastMessage.vue'
 import { ref, computed, onMounted } from 'vue'
 import type { User } from '@/types'
 
@@ -24,11 +25,12 @@ const form = ref({
   birth_date: '', emergency_contact_name: '', emergency_contact_phone: '',
 })
 
-// Créditos inline
-const creditUserId = ref<string | null>(null)
-const creditAmount = ref(0)
+// Créditos
 const showCreditModal = ref(false)
 const customerSearch = ref('')
+const showToast = ref(false)
+const toastMessage = ref('')
+const toastType = ref<'success' | 'error' | 'info'>('success')
 
 const filteredCustomers = computed(() => {
   if (!customerSearch.value) return customers.value
@@ -117,20 +119,32 @@ async function copyCredentials() {
 }
 
 function openCreditModal(userId: string, userName: string, amount: number) {
-  creditModalData.value = { userId, userName, amount }
+  creditModalData.value = { userId, userName, amount: Math.abs(amount) }
   showCreditModal.value = true
+}
+
+function handleCreditAction(type: 'add' | 'deduct') {
+  if (!creditModalData.value || creditModalData.value.amount <= 0) return
+  creditModalData.value.amount = type === 'add' ? creditModalData.value.amount : -creditModalData.value.amount
+  confirmCreditOperation()
 }
 
 async function confirmCreditOperation() {
   if (!creditModalData.value) return
   try {
     await UserService.addCredits(creditModalData.value.userId, creditModalData.value.amount)
-    creditUserId.value = null
-    creditAmount.value = 0
     showCreditModal.value = false
     creditModalData.value = null
     await fetchCustomers()
-  } catch (e: any) { error.value = e.message }
+    toastMessage.value = 'Créditos actualizados'
+    toastType.value = 'success'
+    showToast.value = true
+  } catch (e: any) {
+    error.value = e.message
+    toastMessage.value = e.message || 'Error al actualizar créditos'
+    toastType.value = 'error'
+    showToast.value = true
+  }
 }
 
 async function handleCreateAccount(customer: User) {
@@ -156,6 +170,7 @@ function handleExportCSV() {
 
 <template>
   <div>
+    <ToastMessage :show="showToast" :message="toastMessage" :type="toastType" @close="showToast = false" />
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-2xl font-bold" style="color: var(--color-text)">{{ labels.customers }}</h1>
       <div class="flex space-x-2">
@@ -290,13 +305,7 @@ function handleExportCSV() {
               <span v-else class="px-2 inline-flex text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Sin cuenta</span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm space-x-2">
-              <button v-if="creditUserId !== c.id" @click="creditUserId = c.id; creditAmount = 0" style="color: var(--color-primary)">💰</button>
-              <div v-if="creditUserId === c.id" class="flex items-center space-x-2">
-                <input v-model.number="creditAmount" type="number" min="1" placeholder="± Cantidad" class="w-20 px-2 py-1 border rounded text-sm" :style="{ borderColor: 'var(--color-border)' }" />
-                <button @click="openCreditModal(c.id, c.name, Math.abs(creditAmount))" class="text-green-600 hover:text-green-800 text-sm font-medium">+</button>
-                <button @click="openCreditModal(c.id, c.name, -Math.abs(creditAmount))" class="text-red-600 hover:text-red-800 text-sm font-medium">-</button>
-                <button @click="creditUserId = null" class="text-gray-400 hover:text-gray-600 text-sm">✕</button>
-              </div>
+              <button @click="openCreditModal(c.id, c.name, 0)" class="text-sm px-2 py-1 rounded border cursor-pointer" :style="{ borderColor: 'var(--color-border)', color: 'var(--color-primary)' }">💰 Créditos</button>
               <button @click="startEdit(c)" style="color: var(--color-primary)">✏️ Editar</button>
               <button v-if="!c.has_account" @click="handleCreateAccount(c)" class="text-sm font-medium" style="color: var(--color-primary)">🔑 Crear cuenta</button>
             </td>
@@ -323,13 +332,7 @@ function handleExportCSV() {
         <div class="text-sm mb-1" style="color: var(--color-text-muted)">📱 {{ c.phone || '-' }} · 💰 {{ c.credits }} créditos</div>
         <div v-if="c.email" class="text-xs mb-3" style="color: var(--color-text-muted)">{{ c.email }}</div>
         <div class="flex flex-wrap gap-2">
-          <button v-if="creditUserId !== c.id" @click="creditUserId = c.id; creditAmount = 0" class="text-xs px-2 py-1 rounded border" :style="{ borderColor: 'var(--color-border)', color: 'var(--color-primary)' }">💰 Créditos</button>
-          <div v-if="creditUserId === c.id" class="flex items-center gap-1">
-            <input v-model.number="creditAmount" type="number" min="1" class="w-16 px-2 py-1 border rounded text-sm" :style="{ borderColor: 'var(--color-border)' }" />
-            <button @click="openCreditModal(c.id, c.name, Math.abs(creditAmount))" class="text-green-600 font-medium text-sm">+</button>
-            <button @click="openCreditModal(c.id, c.name, -Math.abs(creditAmount))" class="text-red-600 font-medium text-sm">-</button>
-            <button @click="creditUserId = null" class="text-gray-400 text-sm">✕</button>
-          </div>
+          <button @click="openCreditModal(c.id, c.name, 0)" class="text-xs px-2 py-1 rounded border cursor-pointer" :style="{ borderColor: 'var(--color-border)', color: 'var(--color-primary)' }">💰 Créditos</button>
           <button @click="startEdit(c)" class="text-xs px-2 py-1 rounded border" :style="{ borderColor: 'var(--color-border)', color: 'var(--color-primary)' }">✏️ Editar</button>
           <button v-if="!c.has_account" @click="handleCreateAccount(c)" class="text-xs px-2 py-1 rounded border" :style="{ borderColor: 'var(--color-border)', color: 'var(--color-primary)' }">🔑 Crear cuenta</button>
         </div>
@@ -344,24 +347,42 @@ function handleExportCSV() {
     </div>
     </template>
 
-    <!-- Modal de confirmación de créditos -->
+    <!-- Modal de créditos -->
     <div v-if="showCreditModal && creditModalData" class="fixed inset-0 z-50 flex items-center justify-center">
       <div class="fixed inset-0 bg-black/50" @click="showCreditModal = false"></div>
       <div class="relative rounded-lg shadow-xl max-w-md w-full mx-4 p-6" style="background-color: var(--color-surface)">
-        <h3 class="text-lg font-semibold mb-4" style="color: var(--color-text)">
-          {{ creditModalData.amount > 0 ? 'Agregar' : 'Restar' }} créditos
+        <h3 class="text-lg font-semibold mb-2" style="color: var(--color-text)">
+          Créditos — {{ creditModalData.userName }}
         </h3>
-        <p class="mb-4" style="color: var(--color-text)">
-          ¿Estás seguro de que querés {{ creditModalData.amount > 0 ? 'agregar' : 'restar' }}
-          <strong>{{ Math.abs(creditModalData.amount) }}</strong> crédito(s)
-          a <strong>{{ creditModalData.userName }}</strong>?
-        </p>
+        <p class="text-sm mb-4" style="color: var(--color-text-muted)">Ingresá la cantidad de créditos a agregar o restar.</p>
+
+        <div class="flex items-center space-x-3 mb-4">
+          <button @click="creditModalData.amount = Math.max(0, creditModalData.amount - 1)"
+            class="w-10 h-10 rounded-lg flex items-center justify-center text-lg font-bold cursor-pointer hover:opacity-80"
+            style="background-color: var(--color-primary-subtle); color: var(--color-text)">−</button>
+          <input v-model.number="creditModalData.amount" type="number" min="0"
+            class="flex-1 text-center text-2xl font-bold px-3 py-2 border rounded-lg focus:outline-none focus:ring-2"
+            :style="{ borderColor: 'var(--color-border)', '--tw-ring-color': 'var(--color-primary)', color: 'var(--color-text)' }" />
+          <button @click="creditModalData.amount++"
+            class="w-10 h-10 rounded-lg flex items-center justify-center text-lg font-bold cursor-pointer hover:opacity-80"
+            style="background-color: var(--color-primary-subtle); color: var(--color-text)">+</button>
+        </div>
+
         <div class="flex justify-end space-x-3">
-          <button @click="showCreditModal = false" class="px-4 py-2 rounded-lg" style="background-color: var(--color-primary-subtle); color: var(--color-text)">
+          <button @click="showCreditModal = false" class="px-4 py-2 rounded-lg cursor-pointer" style="background-color: var(--color-primary-subtle); color: var(--color-text)">
             Cancelar
           </button>
-          <button @click="confirmCreditOperation" class="px-4 py-2 rounded-lg text-white" :style="{ backgroundColor: creditModalData.amount > 0 ? '#16a34a' : '#dc2626' }">
-            {{ creditModalData.amount > 0 ? 'Agregar' : 'Restar' }}
+          <button @click="handleCreditAction('add')"
+            :disabled="creditModalData.amount <= 0"
+            class="px-4 py-2 rounded-lg text-white cursor-pointer disabled:opacity-50"
+            style="background-color: var(--color-primary)">
+            Agregar
+          </button>
+          <button @click="handleCreditAction('deduct')"
+            :disabled="creditModalData.amount <= 0"
+            class="px-4 py-2 rounded-lg text-white cursor-pointer disabled:opacity-50"
+            style="background-color: #dc2626">
+            Restar
           </button>
         </div>
       </div>

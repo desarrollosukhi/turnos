@@ -111,6 +111,7 @@ function openBookingModal(svc: ServiceWithProfessional) {
           :cancelled-dates="[]"
           :partially-cancelled-dates="[]"
           :reservation-dates="[]"
+          :attended-dates="[]"
           :class-days="serviceDays"
           @select="handleCalendarSelect"
           class="mb-6"
