@@ -35,6 +35,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Debug env vars
+        run: |
+          echo "URL: ${{ secrets.VITE_SUPABASE_URL }}"
+          echo "KEY length: ${#VITE_SUPABASE_PUBLISHABLE_KEY}"
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+
       - name: Build
         run: pnpm build
         env:
