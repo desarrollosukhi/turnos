@@ -179,5 +179,6 @@ async function copyCredentials() {
         @update:currentPage="currentPage = $event"
       />
     </div>
+    </template>
   </div>
 </template>
