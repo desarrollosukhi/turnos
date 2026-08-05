@@ -1,0 +1,37 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": ["SPEC.md", "CHANGELOG.md"],
+  "skills": {
+    "paths": [
+      ".opencode/skill",
+      "C:\\nvm4w\\nodejs\\node_modules\\ecc-universal\\skills"
+    ]
+  },
+  "agent": {
+    "documentation": {
+      "description": "Genera documentación de usuario para admin, profesional y cliente. Crea guías, FAQ y manuales.",
+      "mode": "subagent",
+      "model": "anthropic/claude-sonnet-4-6"
+    },
+    "sprint-planner": {
+      "description": "Planifica sprints semanales de desarrollo. Analiza el SPEC, prioriza funcionalidades y crea un plan de 7 días.",
+      "mode": "subagent",
+      "model": "anthropic/claude-sonnet-4-6"
+    },
+    "vue-reviewer": {
+      "description": "Revisa código Vue.js identifica bugs, mejoreas y patrones incorrectos.",
+      "mode": "subagent",
+      "model": "anthropic/claude-sonnet-4-6"
+    },
+    "security-reviewer": {
+      "description": "Revisa seguridad: auth, RLS policies, Supabase, XSS, inyección.",
+      "mode": "subagent",
+      "model": "anthropic/claude-sonnet-4-6"
+    },
+    "code-reviewer": {
+      "description": "Review general de código: bugs, mejoras, código muerto, complejidad.",
+      "mode": "subagent",
+      "model": "anthropic/claude-sonnet-4-6"
+    }
+  }
+}
