@@ -33,31 +33,31 @@ onMounted(async () => {
     <!-- KPIs -->
     <SkeletonStats v-if="loading" :count="5" class="grid-cols-2 md:grid-cols-3 lg:grid-cols-5 mb-8" />
     <div v-else class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
-      <div class="rounded-lg shadow p-4" style="background-color: var(--color-surface)">
+      <router-link to="/admin/bookings" class="rounded-lg shadow p-4 hover:shadow-md transition-shadow cursor-pointer" style="background-color: var(--color-surface)">
         <div class="text-2xl mb-1">📅</div>
-        <div class="text-2xl font-bold" style="color: var(--color-primary)">{{ loading ? '—' : kpis.reservas_hoy }}</div>
+        <div class="text-2xl font-bold" style="color: var(--color-primary)">{{ kpis.reservas_hoy }}</div>
         <div class="text-xs" style="color: var(--color-text-muted)">Reservas hoy</div>
-      </div>
-      <div class="rounded-lg shadow p-4" style="background-color: var(--color-surface)">
+      </router-link>
+      <router-link to="/admin/bookings" class="rounded-lg shadow p-4 hover:shadow-md transition-shadow cursor-pointer" style="background-color: var(--color-surface)">
         <div class="text-2xl mb-1">📆</div>
-        <div class="text-2xl font-bold" style="color: var(--color-primary)">{{ loading ? '—' : kpis.reservas_semana }}</div>
+        <div class="text-2xl font-bold" style="color: var(--color-primary)">{{ kpis.reservas_semana }}</div>
         <div class="text-xs" style="color: var(--color-text-muted)">Reservas semana</div>
-      </div>
-      <div class="rounded-lg shadow p-4" style="background-color: var(--color-surface)">
+      </router-link>
+      <router-link to="/admin/customers" class="rounded-lg shadow p-4 hover:shadow-md transition-shadow cursor-pointer" style="background-color: var(--color-surface)">
         <div class="text-2xl mb-1">👥</div>
-        <div class="text-2xl font-bold" style="color: var(--color-primary)">{{ loading ? '—' : kpis.clientes_activos }}</div>
+        <div class="text-2xl font-bold" style="color: var(--color-primary)">{{ kpis.clientes_activos }}</div>
         <div class="text-xs" style="color: var(--color-text-muted)">{{ labels.customers }} activos</div>
-      </div>
-      <div class="rounded-lg shadow p-4" style="background-color: var(--color-surface)">
+      </router-link>
+      <router-link to="/admin/credits" class="rounded-lg shadow p-4 hover:shadow-md transition-shadow cursor-pointer" style="background-color: var(--color-surface)">
         <div class="text-2xl mb-1">💰</div>
-        <div class="text-2xl font-bold" style="color: var(--color-primary)">{{ loading ? '—' : kpis.creditos_total }}</div>
+        <div class="text-2xl font-bold" style="color: var(--color-primary)">{{ kpis.creditos_total }}</div>
         <div class="text-xs" style="color: var(--color-text-muted)">Créditos totales</div>
-      </div>
-      <div class="rounded-lg shadow p-4" style="background-color: var(--color-surface)">
+      </router-link>
+      <router-link to="/admin/reports" class="rounded-lg shadow p-4 hover:shadow-md transition-shadow cursor-pointer" style="background-color: var(--color-surface)">
         <div class="text-2xl mb-1">✅</div>
-        <div class="text-2xl font-bold" style="color: var(--color-primary)">{{ loading ? '—' : kpis.tasa_asistencia + '%' }}</div>
+        <div class="text-2xl font-bold" style="color: var(--color-primary)">{{ kpis.tasa_asistencia }}%</div>
         <div class="text-xs" style="color: var(--color-text-muted)">Asistencia (30d)</div>
-      </div>
+      </router-link>
     </div>
 
     <!-- Navegación -->
