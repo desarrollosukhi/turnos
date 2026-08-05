@@ -342,6 +342,7 @@ function handleExportCSV() {
         @update:currentPage="currentPage = $event"
       />
     </div>
+    </template>
 
     <!-- Modal de confirmación de créditos -->
     <div v-if="showCreditModal && creditModalData" class="fixed inset-0 z-50 flex items-center justify-center">
