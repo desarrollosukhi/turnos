@@ -18,10 +18,10 @@ import { RouterLink } from 'vue-router'
           </RouterLink>
 
           <div class="hidden md:flex items-center gap-8">
-            <a href="#features" class="text-sm font-medium hover:opacity-70 transition-opacity" style="color: var(--color-text-muted)">Características</a>
-            <a href="#how-it-works" class="text-sm font-medium hover:opacity-70 transition-opacity" style="color: var(--color-text-muted)">Cómo funciona</a>
+            <RouterLink to="/#features" class="text-sm font-medium hover:opacity-70 transition-opacity" style="color: var(--color-text-muted)">Características</RouterLink>
+            <RouterLink to="/#how-it-works" class="text-sm font-medium hover:opacity-70 transition-opacity" style="color: var(--color-text-muted)">Cómo funciona</RouterLink>
             <RouterLink to="/docs" class="text-sm font-medium hover:opacity-70 transition-opacity" style="color: var(--color-text-muted)">Documentación</RouterLink>
-            <a href="#contact" class="text-sm font-medium hover:opacity-70 transition-opacity" style="color: var(--color-text-muted)">Contacto</a>
+            <RouterLink to="/#contact" class="text-sm font-medium hover:opacity-70 transition-opacity" style="color: var(--color-text-muted)">Contacto</RouterLink>
           </div>
 
           <div class="flex items-center gap-3">
