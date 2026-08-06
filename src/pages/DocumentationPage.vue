@@ -3,6 +3,25 @@ import { ref, computed, onMounted, nextTick } from 'vue'
 import { marked } from 'marked'
 import { RouterLink } from 'vue-router'
 
+marked.setOptions({
+  renderer: new marked.Renderer(),
+})
+
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+}
+
+const originalHeading = marked.Renderer.prototype.heading
+
+marked.Renderer.prototype.heading = function ({ text, depth }: { text: string; depth: number }) {
+  const id = slugify(typeof text === 'string' ? text : String(text))
+  return `<h${depth} id="${id}">${text}</h${depth}>`
+}
+
 interface DocSection {
   id: string
   title: string
@@ -1027,6 +1046,10 @@ onMounted(() => {
 </template>
 
 <style scoped>
+html {
+  scroll-behavior: smooth;
+}
+
 .docs-layout {
   min-height: 100vh;
   display: flex;
@@ -1297,6 +1320,7 @@ onMounted(() => {
   margin-top: 2rem;
   color: var(--color-text);
   line-height: 1.2;
+  scroll-margin-top: 5rem;
 }
 
 .prose :deep(h2) {
@@ -1307,6 +1331,7 @@ onMounted(() => {
   padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--color-border);
   color: var(--color-text);
+  scroll-margin-top: 5rem;
 }
 
 .prose :deep(h3) {
@@ -1315,6 +1340,7 @@ onMounted(() => {
   margin-bottom: 0.5rem;
   margin-top: 1.5rem;
   color: var(--color-text);
+  scroll-margin-top: 5rem;
 }
 
 .prose :deep(p) {
