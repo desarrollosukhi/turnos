@@ -12,6 +12,70 @@ interface ChangelogEntry {
 
 const entries = ref<ChangelogEntry[]>([
   {
+    version: 'v1.1.0',
+    date: '2026-08-05',
+    changes: [
+      {
+        category: 'Feriados — Auto-sync desde API',
+        items: [
+          'Feriados nacionales se cargan automáticamente desde ArgentinaDatos al abrir Configuración',
+          'Botón "🔄 Sincronizar" para refrescar manualmente desde la API',
+          'Se sincronizan año actual + siguiente automáticamente',
+          'Badge "Nacional" en feriados que provienen de la API',
+          'Eliminado panel de importación manual (año selector + botón Importar)',
+          'Botón único "Activar/Desactivar todos" (se alterna según estado actual)',
+          'Lista colapsada (muestra 4 feriados) con botón "Ver todos"',
+          'Buscador de feriados por nombre o fecha',
+          'Fix: RLS policy de UPDATE faltante en tabla holidays',
+          'Feedback visual: spinner + texto durante activar/desactivar todos',
+          'Cursor pointer en todos los toggles',
+        ],
+      },
+      {
+        category: 'Avisos (Anuncios)',
+        items: [
+          'CRUD completo de avisos para administradores',
+          'Editor de rich text (Tiptap) para contenido',
+          'Dos modos de descarte: "Recordarme" (sesión) y "No mostrar" (permanente)',
+          'Reactivación de avisos descartados por el admin',
+          'Anuncios de cancelación de sesión se muestran a todos los alumnos',
+        ],
+      },
+      {
+        category: 'Reservas del cliente — Tabs',
+        items: [
+          'Tabs Pendientes / Realizadas / Canceladas con conteo',
+          'Labels de estado en español (Pendiente, Asistió, Ausente, Cancelada)',
+        ],
+      },
+      {
+        category: 'Créditos — Paginación',
+        items: [
+          'Botón "Ver más" para historial de movimientos (carga de 10 en 10)',
+        ],
+      },
+      {
+        category: 'Calendario',
+        items: [
+          'Fix: indicador de reserva solo se muestra si no hay sesión cancelada',
+        ],
+      },
+      {
+        category: 'Admin Reservas',
+        items: [
+          'Excluir servicios ya cancelados del modal de cancelación de sesión',
+        ],
+      },
+      {
+        category: 'Dependencias',
+        items: [
+          '@tiptap/vue-3, @tiptap/starter-kit, @tiptap/pm — editor rich text',
+          'marked — renderizado de markdown',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v1.0.0',
     date: '2026-07-30',
     changes: [

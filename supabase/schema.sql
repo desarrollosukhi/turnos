@@ -422,6 +422,9 @@ CREATE POLICY "holidays_admin_insert" ON holidays
 CREATE POLICY "holidays_admin_delete" ON holidays
   FOR DELETE USING (is_admin_of(company_id));
 
+CREATE POLICY "holidays_admin_update" ON holidays
+  FOR UPDATE USING (is_admin_of(company_id));
+
 -- ============================================
 -- FUNCIONES
 -- ============================================

@@ -2,14 +2,13 @@
 import { useAuthStore } from '@/stores/auth'
 import { CompanyService } from '@/services/CompanyService'
 import { HolidayService } from '@/services/HolidayService'
-import { fetchHolidaysByYear, getHolidaysByYear } from '@/services/HolidaysNational'
-import type { HolidayNacional } from '@/services/HolidaysNational'
+import { fetchHolidaysForYears } from '@/services/HolidaysNational'
 import { themePresets } from '@/utils/themePresets'
 import { useTheme } from '@/composables/useTheme'
 import ToastMessage from '@/components/ToastMessage.vue'
 import ConfirmModal from '@/components/ConfirmModal.vue'
 import ImageCropper from '@/components/ImageCropper.vue'
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import type { Holiday, Company, CompanySettings } from '@/types'
 
 const authStore = useAuthStore()
@@ -21,10 +20,11 @@ const holidays = ref<Holiday[]>([])
 const loading = ref(true)
 const saving = ref(false)
 const showAddHoliday = ref(false)
-const showImportHoliday = ref(false)
-const importYear = ref(new Date().getFullYear())
-const importing = ref(false)
+const syncing = ref(false)
+const holidaySearch = ref('')
+const holidaysExpanded = ref(false)
 const holidayForm = ref({ date: '', name: '' })
+const nationalDates = ref<Set<string>>(new Set())
 const showToast = ref(false)
 const toastMessage = ref('')
 const toastType = ref<'success' | 'error' | 'info'>('success')
@@ -50,23 +50,30 @@ const gymSchedule = ref<Record<GymDayName, GymDay>>({
   domingo: { active: false, start: '09:00', end: '18:00' },
 })
 
-const holidaysNational = ref<HolidayNacional[]>([])
-const loadingHolidays = ref(false)
-
-async function loadNationalHolidays() {
-  loadingHolidays.value = true
-  holidaysNational.value = await fetchHolidaysByYear(importYear.value)
-  loadingHolidays.value = false
+async function syncHolidaysFromAPI() {
+  if (!authStore.companyId) return
+  syncing.value = true
+  try {
+    const currentYear = new Date().getFullYear()
+    const national = await fetchHolidaysForYears([currentYear, currentYear + 1])
+    const natDates = new Set(national.map(h => h.date))
+    nationalDates.value = natDates
+    // Crear feriados que no existen
+    for (const h of national) {
+      if (!holidays.value.some(exist => exist.date === h.date)) {
+        await HolidayService.create({ company_id: authStore.companyId, date: h.date, name: h.name })
+      }
+    }
+    holidays.value = await HolidayService.getAll(authStore.companyId)
+  } catch (e: any) {
+    toastMessage.value = e.message || 'Error al sincronizar feriados'
+    toastType.value = 'error'
+    showToast.value = true
+  } finally { syncing.value = false }
 }
-
-watch(importYear, () => loadNationalHolidays())
 
 const gymDays = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'] as const
 type GymDayName = typeof gymDays[number]
-const holidaysAvailable = computed(() => {
-  const dates = new Set(holidays.value.map(h => h.date))
-  return holidaysNational.value.filter(h => !dates.has(h.date))
-})
 
 onMounted(async () => {
   if (!authStore.companyId) return
@@ -74,7 +81,7 @@ onMounted(async () => {
     companyData.value = await CompanyService.getById(authStore.companyId)
     settingsData.value = await CompanyService.getSettings(authStore.companyId)
     holidays.value = await HolidayService.getAll(authStore.companyId)
-    await loadNationalHolidays()
+    await syncHolidaysFromAPI()
     // Load gym schedule
     if (companyData.value?.gym_schedule) {
       const raw = companyData.value.gym_schedule
@@ -256,23 +263,6 @@ async function handleAddHoliday() {
   }
 }
 
-async function handleImportHolidays() {
-  if (!authStore.companyId || holidaysAvailable.value.length === 0) return
-  importing.value = true
-  try {
-    for (const h of holidaysAvailable.value) {
-      await HolidayService.create({ company_id: authStore.companyId, date: h.date, name: h.name })
-    }
-    holidays.value = await HolidayService.getAll(authStore.companyId)
-    showImportHoliday.value = false
-  } catch (e: any) {
-    toastMessage.value = e.message || 'Error al importar feriados'
-    toastType.value = 'error'
-    showToast.value = true
-  }
-  finally { importing.value = false }
-}
-
 async function handleDeleteHoliday(id: string) {
   if (!confirm('¿Eliminar?')) return
   try { await HolidayService.delete(id); holidays.value = holidays.value.filter(h => h.id !== id) }
@@ -291,6 +281,63 @@ async function handleToggleHoliday(h: Holiday) {
     showToast.value = true
   }
 }
+
+const filteredHolidays = computed(() => {
+  const sorted = [...holidays.value].sort((a, b) => a.date.localeCompare(b.date))
+  if (!holidaySearch.value.trim()) return sorted
+  const q = holidaySearch.value.toLowerCase()
+  return sorted.filter(h => h.name.toLowerCase().includes(q) || h.date.includes(q))
+})
+
+const visibleHolidays = computed(() => {
+  if (holidaysExpanded.value || holidaySearch.value.trim()) return filteredHolidays.value
+  return filteredHolidays.value.slice(0, 4)
+})
+
+const hasMoreHolidays = computed(() => filteredHolidays.value.length > 4 && !holidaysExpanded.value && !holidaySearch.value.trim())
+
+async function handleDeactivateAll() {
+  if (!authStore.companyId) return
+  const activeHolidays = holidays.value.filter(h => h.active)
+  if (activeHolidays.length === 0) return
+  togglingAll.value = true
+  try {
+    for (const h of activeHolidays) {
+      await HolidayService.toggleActive(h.id, false)
+    }
+    holidays.value = holidays.value.map(h => ({ ...h, active: false }))
+    toastMessage.value = `${activeHolidays.length} feriados desactivados`
+    toastType.value = 'success'
+    showToast.value = true
+  } catch (e: any) {
+    toastMessage.value = e.message || 'Error al desactivar feriados'
+    toastType.value = 'error'
+    showToast.value = true
+  } finally { togglingAll.value = false }
+}
+
+async function handleActivateAll() {
+  if (!authStore.companyId) return
+  const inactiveHolidays = holidays.value.filter(h => !h.active)
+  if (inactiveHolidays.length === 0) return
+  togglingAll.value = true
+  try {
+    for (const h of inactiveHolidays) {
+      await HolidayService.toggleActive(h.id, true)
+    }
+    holidays.value = holidays.value.map(h => ({ ...h, active: true }))
+    toastMessage.value = `${inactiveHolidays.length} feriados activados`
+    toastType.value = 'success'
+    showToast.value = true
+  } catch (e: any) {
+    toastMessage.value = e.message || 'Error al activar feriados'
+    toastType.value = 'error'
+    showToast.value = true
+  } finally { togglingAll.value = false }
+}
+
+const allActive = computed(() => holidays.value.length > 0 && holidays.value.every(h => h.active))
+const togglingAll = ref(false)
 
 async function handleSelectPreset(presetId: string) {
   if (!authStore.companyId || !settingsData.value) return
@@ -551,28 +598,16 @@ async function handleSelectPreset(presetId: string) {
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-lg font-semibold" style="color: var(--color-text)">Feriados</h2>
           <div class="space-x-2">
-            <button @click="showImportHoliday = !showImportHoliday" class="px-4 py-2 rounded-lg text-white text-sm" style="background-color: #16a34a">📥 Importar</button>
+            <button @click="syncHolidaysFromAPI" :disabled="syncing" class="px-4 py-2 rounded-lg text-white text-sm disabled:opacity-50" style="background-color: #16a34a">
+              {{ syncing ? 'Sincronizando...' : '🔄 Sincronizar' }}
+            </button>
             <button @click="showAddHoliday = !showAddHoliday" class="px-4 py-2 rounded-lg text-white text-sm" :style="{ backgroundColor: 'var(--color-primary)' }">+ Agregar</button>
           </div>
         </div>
 
-        <div v-if="showImportHoliday" class="rounded-lg p-4 mb-4" style="background-color: #f0fdf4; border: 1px solid #bbf7d0">
-          <h3 class="font-semibold mb-2" style="color: #166534">Feriados nacionales Argentina</h3>
-          <div class="flex items-center space-x-4 mb-3">
-            <label class="text-sm" style="color: var(--color-text)">Año:</label>
-            <select v-model="importYear" class="px-3 py-1 border rounded-lg text-sm" :style="{ borderColor: 'var(--color-border)' }">
-              <option :value="2025">2025</option>
-              <option :value="2026">2026</option>
-              <option :value="2027">2027</option>
-            </select>
-          </div>
-          <div v-if="loadingHolidays" class="text-sm mb-3" style="color: var(--color-text-muted)">Cargando feriados de la API...</div>
-          <template v-else>
-            <p v-if="holidaysAvailable.length === 0" class="text-sm mb-3" style="color: #166534">Todos importados.</p>
-            <p v-else class="text-sm mb-3" style="color: var(--color-text-muted)">Se importarán {{ holidaysAvailable.length }} feriados.</p>
-            <button @click="handleImportHolidays" :disabled="importing || holidaysAvailable.length === 0" class="px-4 py-2 rounded-lg text-white text-sm disabled:opacity-50" style="background-color: #16a34a">{{ importing ? 'Importando...' : 'Importar' }}</button>
-          </template>
-        </div>
+        <p class="text-sm mb-4" style="color: var(--color-text-muted)">
+          Los feriados nacionales se cargan automáticamente desde ArgentinaDatos. Desactivá los que no apliquen a tu negocio.
+        </p>
 
         <div v-if="showAddHoliday" class="rounded-lg p-4 mb-4" style="background-color: var(--color-primary-subtle)">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -590,20 +625,62 @@ async function handleSelectPreset(presetId: string) {
 
         <div v-if="holidays.length === 0" class="text-center py-4" style="color: var(--color-text-muted)">No hay feriados.</div>
 
-        <div v-else class="divide-y">
-          <div v-for="h in holidays" :key="h.id" class="flex justify-between items-center py-3">
-            <div class="flex items-center space-x-3">
-              <button @click="handleToggleHoliday(h)" :class="[h.active ? 'bg-green-500' : 'bg-gray-300', 'relative inline-flex h-6 w-11 items-center rounded-full transition-colors']">
-                <span :class="[h.active ? 'translate-x-6' : 'translate-x-1', 'inline-block h-4 w-4 transform rounded-full bg-white transition-transform']" />
-              </button>
-              <div>
-                <p class="font-medium" style="color: var(--color-text)">{{ h.name }}</p>
-                <p class="text-sm" style="color: var(--color-text-muted)">{{ h.date }}</p>
-              </div>
+        <template v-else>
+          <!-- Buscador + Desactivar todos -->
+          <div class="flex items-center space-x-3 mb-4">
+            <div class="flex-1 relative">
+              <input v-model="holidaySearch" type="text" placeholder="Buscar feriado..."
+                class="w-full pl-9 pr-3 py-2 border rounded-lg text-sm"
+                :style="{ borderColor: 'var(--color-border)' }" />
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style="color: var(--color-text-muted)">🔍</span>
             </div>
-            <button @click="handleDeleteHoliday(h.id)" style="color: #dc2626" class="text-sm hover:underline">Eliminar</button>
+            <button @click="allActive ? handleDeactivateAll() : handleActivateAll()"
+              :disabled="holidays.length === 0 || togglingAll"
+              class="px-4 py-2 rounded-lg text-sm whitespace-nowrap disabled:opacity-50 transition-all cursor-pointer disabled:cursor-wait"
+              :style="allActive
+                ? 'background-color: #fef2f2; color: #991b1b; border: 1px solid #fecaca'
+                : 'background-color: #f0fdf4; color: #166534; border: 1px solid #bbf7d0'">
+              <span v-if="togglingAll" class="inline-flex items-center space-x-1">
+                <span class="animate-spin">⏳</span>
+                <span>{{ allActive ? 'Desactivando...' : 'Activando...' }}</span>
+              </span>
+              <span v-else>⏻ {{ allActive ? 'Desactivar todos' : 'Activar todos' }}</span>
+            </button>
           </div>
-        </div>
+
+          <!-- Lista -->
+          <div class="divide-y">
+            <div v-for="h in visibleHolidays" :key="h.id" class="flex justify-between items-center py-3">
+              <div class="flex items-center space-x-3">
+                <button @click="handleToggleHoliday(h)" :class="[h.active ? 'bg-green-500' : 'bg-gray-300', 'relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer']">
+                  <span :class="[h.active ? 'translate-x-6' : 'translate-x-1', 'inline-block h-4 w-4 transform rounded-full bg-white transition-transform']" />
+                </button>
+                <div>
+                  <div class="flex items-center space-x-2">
+                    <p class="font-medium" style="color: var(--color-text)">{{ h.name }}</p>
+                    <span v-if="nationalDates.has(h.date)" class="px-2 py-0.5 text-xs rounded-full" style="background-color: #dbeafe; color: #1e40af">Nacional</span>
+                  </div>
+                  <p class="text-sm" style="color: var(--color-text-muted)">{{ h.date }}</p>
+                </div>
+              </div>
+              <button @click="handleDeleteHoliday(h.id)" style="color: #dc2626" class="text-sm hover:underline">Eliminar</button>
+            </div>
+          </div>
+
+          <!-- Expandir / Colapsar -->
+          <div v-if="hasMoreHolidays || holidaysExpanded" class="text-center mt-3">
+            <button v-if="hasMoreHolidays" @click="holidaysExpanded = true"
+              class="text-sm px-4 py-1.5 rounded-lg cursor-pointer hover:opacity-80"
+              style="color: var(--color-primary); background-color: var(--color-primary-subtle)">
+              Ver todos ({{ filteredHolidays.length }})
+            </button>
+            <button v-else-if="holidaysExpanded && filteredHolidays.length > 4" @click="holidaysExpanded = false"
+              class="text-sm px-4 py-1.5 rounded-lg cursor-pointer hover:opacity-80"
+              style="color: var(--color-primary); background-color: var(--color-primary-subtle)">
+              Mostrar menos
+            </button>
+          </div>
+        </template>
       </div>
 
     </div>

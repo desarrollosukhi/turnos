@@ -62,10 +62,10 @@ const holidaysFallback: HolidayNacional[] = [
   { date: '2027-12-25', name: 'Navidad', type: 'inamovible' },
 ]
 
-// Fetch feriados desde API de ArgentinaDatos
-export async function fetchHolidaysByYear(year: number): Promise<HolidayNacional[]> {
+// Fetch feriados de un año desde API de ArgentinaDatos
+async function fetchByYear(year: number): Promise<HolidayNacional[]> {
   try {
-    const res = await fetch(`https://argentinadatos.com/v1/feriados/${year}`)
+    const res = await fetch(`https://api.argentinadatos.com/v1/feriados/${year}`)
     if (!res.ok) return holidaysFallback.filter(f => f.date.startsWith(year.toString()))
     const data = await res.json()
     if (!Array.isArray(data) || data.length === 0) return holidaysFallback.filter(f => f.date.startsWith(year.toString()))
@@ -77,6 +77,17 @@ export async function fetchHolidaysByYear(year: number): Promise<HolidayNacional
   } catch {
     return holidaysFallback.filter(f => f.date.startsWith(year.toString()))
   }
+}
+
+// Fetch feriados de múltiples años (para auto-sync)
+export async function fetchHolidaysForYears(years: number[]): Promise<HolidayNacional[]> {
+  const results = await Promise.all(years.map(y => fetchByYear(y)))
+  return results.flat()
+}
+
+// Legacy: fetch de un solo año
+export async function fetchHolidaysByYear(year: number): Promise<HolidayNacional[]> {
+  return fetchByYear(year)
 }
 
 // Función sincrónica (fallback) para uso donde no se puede esperar

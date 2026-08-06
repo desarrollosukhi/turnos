@@ -2,6 +2,20 @@
 
 ## v1.1.0 — Avisos, UX y Fixes (2026-08-05)
 
+### Feriados — Auto-sync desde API
+- Feriados nacionales se cargan automáticamente desde ArgentinaDatos al abrir Configuración
+- Botón "🔄 Sincronizar" para refrescar manualmente desde la API
+- Se sincronizan año actual + siguiente automáticamente
+- Badge "Nacional" en feriados que provienen de la API
+- Eliminado panel de importación manual (año selector + botón Importar)
+- Los feriados manuales siguen disponibles con "+ Agregar"
+- Botón único "Activar/Desactivar todos" (se alterna según estado actual)
+- Lista colapsada (muestra 4 feriados) con botón "Ver todos"
+- Buscador de feriados por nombre o fecha
+- Fix: RLS policy de UPDATE faltante en tabla holidays (migración `migration-holidays-update-policy.sql`)
+- Feedback visual: spinner + texto durante activar/desactivar todos
+- Cursor pointer en todos los toggles
+
 ### Avisos (Anuncios)
 - CRUD completo de avisos para administradores (`/admin/announcements`)
 - Editor de rich text (Tiptap) para contenido de avisos
