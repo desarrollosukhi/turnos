@@ -5,6 +5,7 @@ import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import AuthLayout from '@/layouts/AuthLayout.vue'
 import ProfessionalLayout from '@/layouts/ProfessionalLayout.vue'
+import LandingLayout from '@/layouts/LandingLayout.vue'
 import { useTheme } from '@/composables/useTheme'
 import { useAuthStore } from '@/stores/auth'
 
@@ -17,6 +18,7 @@ const layout = computed(() => {
   if (layoutName === 'admin') return AdminLayout
   if (layoutName === 'auth') return AuthLayout
   if (layoutName === 'professional') return ProfessionalLayout
+  if (layoutName === 'landing') return LandingLayout
   return DefaultLayout
 })
 
