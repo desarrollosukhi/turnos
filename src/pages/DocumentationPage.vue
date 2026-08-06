@@ -916,6 +916,21 @@ const renderedContent = computed(() => {
   return marked.parse(currentContent.value) as string
 })
 
+const tocHeadings = computed(() => {
+  const html = renderedContent.value
+  const headings: { id: string; text: string; level: number }[] = []
+  const regex = /<h([23])\s*(?:id="([^"]*)")?[^>]*>(.*?)<\/h[23]>/gi
+  let match
+  let counter = 0
+  while ((match = regex.exec(html)) !== null) {
+    const level = parseInt(match[1]!)
+    const text = (match[3] || '').replace(/<[^>]*>/g, '')
+    const id = match[2] || `heading-${counter++}`
+    headings.push({ id, text, level })
+  }
+  return headings
+})
+
 function selectSection(id: string) {
   activeSection.value = id
   mobileMenuOpen.value = false
@@ -992,6 +1007,21 @@ onMounted(() => {
           <div class="prose" v-html="renderedContent"></div>
         </div>
       </main>
+
+      <!-- Right TOC -->
+      <aside class="docs-toc" v-if="tocHeadings.length > 0">
+        <h4 class="docs-toc-title">En esta página</h4>
+        <ul class="docs-toc-list">
+          <li v-for="heading in tocHeadings" :key="heading.id">
+            <a
+              :href="`#${heading.id}`"
+              class="docs-toc-link"
+              :class="{ indent: heading.level === 3 }">
+              {{ heading.text }}
+            </a>
+          </li>
+        </ul>
+      </aside>
     </div>
   </div>
 </template>
@@ -1131,7 +1161,7 @@ onMounted(() => {
 }
 
 .docs-sidebar-nav {
-  padding: 1.5rem 0;
+  padding: 1rem 0;
 }
 
 .docs-sidebar-group {
@@ -1139,12 +1169,12 @@ onMounted(() => {
 }
 
 .docs-sidebar-title {
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--color-text);
-  padding: 0 1.5rem;
+  padding: 0 1rem;
   margin-bottom: 0.5rem;
 }
 
@@ -1158,7 +1188,7 @@ onMounted(() => {
   display: block;
   width: 100%;
   text-align: left;
-  padding: 0.5rem 1.5rem 0.5rem 1.75rem;
+  padding: 0.4rem 1rem 0.4rem 1.5rem;
   font-size: 0.875rem;
   color: var(--color-text-muted);
   background: none;
@@ -1184,7 +1214,7 @@ onMounted(() => {
 .docs-content {
   flex: 1;
   min-width: 0;
-  padding: 2rem 3rem;
+  padding: 2rem 3rem 2rem 3rem;
 }
 
 @media (max-width: 1023px) {
@@ -1195,12 +1225,64 @@ onMounted(() => {
 
 @media (min-width: 1024px) {
   .docs-content {
-    max-width: 52rem;
+    max-width: 48rem;
   }
 }
 
 .docs-content-inner {
   max-width: 100%;
+}
+
+/* Right TOC */
+.docs-toc {
+  width: 14rem;
+  flex-shrink: 0;
+  position: sticky;
+  top: 3.5rem;
+  height: calc(100vh - 3.5rem);
+  overflow-y: auto;
+  padding: 2rem 1rem 2rem 0;
+  border-left: 1px solid var(--color-border);
+}
+
+@media (max-width: 1279px) {
+  .docs-toc {
+    display: none;
+  }
+}
+
+.docs-toc-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text);
+  margin-bottom: 1rem;
+}
+
+.docs-toc-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.docs-toc-link {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  padding: 0.3rem 0 0.3rem 0.75rem;
+  border-left: 2px solid transparent;
+  transition: all 0.15s;
+  line-height: 1.4;
+}
+
+.docs-toc-link:hover {
+  color: var(--color-text);
+}
+
+.docs-toc-link.indent {
+  padding-left: 1.5rem;
 }
 
 /* Prose styles */
@@ -1209,7 +1291,7 @@ onMounted(() => {
 }
 
 .prose :deep(h1) {
-  font-size: 2rem;
+  font-size: 2.5rem;
   font-weight: 700;
   margin-bottom: 1rem;
   margin-top: 2rem;
@@ -1218,7 +1300,7 @@ onMounted(() => {
 }
 
 .prose :deep(h2) {
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   font-weight: 600;
   margin-bottom: 0.75rem;
   margin-top: 2.5rem;
@@ -1228,7 +1310,7 @@ onMounted(() => {
 }
 
 .prose :deep(h3) {
-  font-size: 1.25rem;
+  font-size: 1.375rem;
   font-weight: 600;
   margin-bottom: 0.5rem;
   margin-top: 1.5rem;
