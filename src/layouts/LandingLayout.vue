@@ -20,6 +20,7 @@ import { RouterLink } from 'vue-router'
           <div class="hidden md:flex items-center gap-8">
             <a href="#features" class="text-sm font-medium hover:opacity-70 transition-opacity" style="color: var(--color-text-muted)">Características</a>
             <a href="#how-it-works" class="text-sm font-medium hover:opacity-70 transition-opacity" style="color: var(--color-text-muted)">Cómo funciona</a>
+            <RouterLink to="/docs" class="text-sm font-medium hover:opacity-70 transition-opacity" style="color: var(--color-text-muted)">Documentación</RouterLink>
             <a href="#contact" class="text-sm font-medium hover:opacity-70 transition-opacity" style="color: var(--color-text-muted)">Contacto</a>
           </div>
 
@@ -43,39 +44,65 @@ import { RouterLink } from 'vue-router'
       <slot />
     </main>
 
-    <footer class="border-t py-10" style="border-color: var(--color-border)">
-      <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <!-- Asterisk -->
+    <footer class="mt-auto" style="background-color: var(--color-surface)">
+      <div class="border-t" style="border-color: var(--color-border)"></div>
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <!-- Top section -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-10 mb-10">
+          <!-- Brand -->
           <div>
-            <a href="https://asteriskconsultora.com/" target="_blank" class="inline-flex items-center gap-2 mb-3 hover:opacity-80 transition-opacity">
-              <svg class="h-8 w-auto" viewBox="0 0 4946.29 4946.29" xmlns="http://www.w3.org/2000/svg">
+            <a href="https://asteriskconsultora.com/" target="_blank" class="inline-flex items-center gap-2.5 mb-4 group">
+              <svg class="h-9 w-auto transition-transform group-hover:scale-110" viewBox="0 0 4946.29 4946.29" xmlns="http://www.w3.org/2000/svg">
                 <path fill="#e63605" fill-rule="evenodd" d="M4852.35,2109.8c-79.29-61.34-194.85-65.82-294.34-15.71-65.82,49.74-176.53,124.54-321.64,194.85-156.33,74.8-679.56,328.37-1198.29,151.84-113.32-38.52-203.83-88.26-271.9-129.03h43.01c61.34-4.49,224.4-25.06,579.7-271.9,197.1-135.76,348.94-242.35,514.25-434.96,147.36-169.8,353.43-412.15,335.1-702-11.22-154.09-79.29-233.38-92.75-251.33-25.06-27.3-117.81-133.52-249.08-117.81-99.48,13.46-183.63,90.51-219.54,197.1-11.22,81.53-36.28,212.81-88.26,366.89-56.47,163.06-249.08,713.59-738.27,955.94-106.59,51.99-206.07,81.53-283.12,99.48,8.98-11.22,20.57-20.57,29.55-31.79,40.77-47.5,140.25-176.53,217.29-602.51,43.01-235.62,74.8-418.88,56.47-672.82-15.71-224.4-40.77-541.18-260.3-733.79C2494.65,10.17,2388.06,1.2,2367.87,1.2c-36.28-2.24-176.53-11.22-258.06,92.75-61.34,79.29-65.82,194.85-15.71,294.34,49.74,65.82,124.54,176.53,194.85,321.64,74.8,156.33,328.37,679.56,151.84,1198.29-38.52,113.32-88.26,203.83-129.03,271.9v-43.01c-4.49-61.34-25.06-224.4-271.9-579.7-135.76-197.1-242.35-348.94-434.96-514.25-169.8-147.36-412.15-353.43-702-335.1-154.09,11.22-233.38,79.29-251.33,92.75-27.3,25.06-133.52,117.81-117.81,249.08,13.46,99.48,90.51,183.63,197.1,219.54,81.53,11.22,212.81,36.28,366.89,88.26,163.06,56.47,713.59,249.08,955.94,738.27,51.99,106.59,81.53,206.07,99.48,283.12-11.22-8.98-20.57-20.57-31.79-29.55-47.5-40.77-176.53-140.25-602.51-217.29-235.62-43.01-418.88-74.8-672.82-56.47-224.4,15.71-541.18,40.77-733.79,260.3C10.17,2451.64,1.2,2558.23,1.2,2578.43c-2.24,36.28-11.22,176.53,92.75,258.06,79.29,61.34,194.85,65.82,294.34,15.71,65.82-49.74,176.53-124.54,321.64-194.85,156.33-74.8,679.56-328.37,1198.29-151.84,113.32,38.52,203.83,88.26,271.9,129.03h-43.01c-61.34,4.49-224.4,25.06-579.7,271.9-197.1,135.76-348.94,242.35-514.25,434.96-147.36,169.8-353.43,412.15-335.1,702,11.22,154.09,79.29,233.38,92.75,251.33,25.06,27.3,117.81,133.52,249.08,117.81,99.48-13.46,183.63-90.51,219.54-197.1,11.22-81.53,36.28-212.81,88.26-366.89,56.47-163.06,249.08-713.59,738.27-955.94,106.59-51.99,206.07-81.53,283.12-99.48-8.98,11.22-20.57,20.57-29.55,31.79-40.77,47.5-140.25,176.53-217.29,602.51-43.01,235.62-74.8,418.88-56.47,672.82,15.71,224.4,40.77,541.18,260.3,733.79,115.57,102.1,222.16,111.08,242.35,111.08,36.28,2.24,176.53,11.22,258.06-92.75,61.34-79.29,65.82-194.85,15.71-294.34-49.74-65.82-124.54-176.53-194.85-321.64-74.8-156.33-328.37-679.56-151.84-1198.29,38.52-113.32,88.26-203.83,129.03-271.9v43.01c4.49,61.34,25.06,224.4,271.9,579.7,135.76,197.1,242.35,348.94,434.96,514.25,169.8,147.36,412.15,353.43,702,335.1,154.09-11.22,233.38-79.29,251.33-92.75,27.3-25.06,133.52-117.81,117.81-249.08-13.46-99.48-90.51-183.63-197.1-219.54-81.53-11.22-212.81-36.28-366.89-88.26-163.06-56.47-713.59-249.08-955.94-738.27-51.99-106.59-81.53-206.07-99.48-283.12,11.22,8.98,20.57,20.57,31.79,29.55,47.5,40.77,176.53,140.25,602.51,217.29,235.62,43.01,418.88,74.8,672.83,56.47,224.4-15.71,541.18-40.77,733.79-260.3,102.1-115.57,111.08-222.16,111.08-242.35,2.24-36.28,11.22-176.53-92.75-258.06h0Z"/>
               </svg>
-              <span class="font-bold" style="color: var(--color-text)">Asterisk</span>
+              <span class="text-xl font-bold" style="color: var(--color-text)">Asterisk</span>
             </a>
-            <p class="text-sm" style="color: var(--color-text-muted)">
-              Empresa de tecnología de Villa María. Soluciones simples y efectivas para emprendedores.
+            <p class="text-sm leading-relaxed max-w-xs" style="color: var(--color-text-muted)">
+              Empresa de tecnología de Villa María. Creamos soluciones simples y efectivas para emprendedores.
             </p>
           </div>
 
           <!-- Links -->
-          <div class="flex flex-col items-center gap-2">
-            <RouterLink to="/login" class="text-sm hover:underline" style="color: var(--color-primary)">Iniciar sesión</RouterLink>
-            <RouterLink to="/changelog" class="text-sm hover:underline" style="color: var(--color-primary)">Changelog</RouterLink>
-            <p class="text-xs mt-2" style="color: var(--color-text-muted)">
-              &copy; {{ new Date().getFullYear() }} Asterisk Corp · Todos los derechos reservados
-            </p>
+          <div>
+            <h4 class="text-sm font-semibold mb-4 uppercase tracking-wider" style="color: var(--color-text)">Plataforma</h4>
+            <ul class="space-y-3">
+              <li>
+                <RouterLink to="/login" class="text-sm transition-colors hover:underline" style="color: var(--color-text-muted)">Iniciar sesión</RouterLink>
+              </li>
+              <li>
+                <RouterLink to="/register" class="text-sm transition-colors hover:underline" style="color: var(--color-text-muted)">Crear cuenta</RouterLink>
+              </li>
+              <li>
+                <RouterLink to="/docs" class="text-sm transition-colors hover:underline" style="color: var(--color-text-muted)">Documentación</RouterLink>
+              </li>
+              <li>
+                <RouterLink to="/changelog" class="text-sm transition-colors hover:underline" style="color: var(--color-text-muted)">Changelog</RouterLink>
+              </li>
+            </ul>
           </div>
 
-          <!-- WhatsApp -->
-          <div class="flex md:justify-end">
+          <!-- Contact -->
+          <div>
+            <h4 class="text-sm font-semibold mb-4 uppercase tracking-wider" style="color: var(--color-text)">Contacto</h4>
             <a href="https://wa.me/5493534746217" target="_blank"
-              class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-white text-sm font-medium hover:opacity-90 transition-opacity"
+              class="inline-flex items-center gap-2.5 px-5 py-3 rounded-xl text-white text-sm font-medium transition-all hover:scale-105 hover:shadow-lg"
               style="background-color: #25d366">
               <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.197 1.36.168 1.871.101.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.273-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.621-.235-.374a9.87 9.87 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.924c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.924a11.821 11.821 0 00-3.48-8.413z"/></svg>
-              Contactanos
+              Escribinos por WhatsApp
             </a>
+            <p class="text-xs mt-3" style="color: var(--color-text-muted)">
+              Respondemos en menos de 24hs
+            </p>
+          </div>
+        </div>
+
+        <!-- Bottom bar -->
+        <div class="pt-8 border-t flex flex-col sm:flex-row items-center justify-between gap-4" style="border-color: var(--color-border)">
+          <p class="text-xs" style="color: var(--color-text-muted)">
+            &copy; {{ new Date().getFullYear() }} Asterisk Corp · Todos los derechos reservados
+          </p>
+          <div class="flex items-center gap-4">
+            <a href="https://asteriskconsultora.com/" target="_blank" class="text-xs hover:underline" style="color: var(--color-text-muted)">asteriskconsultora.com</a>
           </div>
         </div>
       </div>
