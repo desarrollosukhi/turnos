@@ -236,6 +236,7 @@ export interface Announcement {
   date_from: string
   date_to: string | null
   active: boolean
+  reactivated_at?: string | null
   created_at: string
 }
 

@@ -8,6 +8,7 @@ import PaginationBar from '@/components/PaginationBar.vue'
 import SkeletonTable from '@/components/SkeletonTable.vue'
 import { ref, computed, onMounted, watch } from 'vue'
 import ToastMessage from '@/components/ToastMessage.vue'
+import { supabase } from '@/supabase/client'
 
 const authStore = useAuthStore()
 const bookings = ref<any[]>([])
@@ -30,20 +31,32 @@ const showToast = ref(false)
 const toastMessage = ref('')
 const toastType = ref<'success' | 'error' | 'info'>('success')
 
+// Canceladas
+const cancelledServices = ref<{ date: string; service_id: string }[]>([])
+const cancelledServiceKeys = computed(() => {
+  return new Set(
+    cancelledServices.value
+      .filter(c => c.date === cancelSessionDate.value)
+      .map(c => c.service_id)
+  )
+})
+
 // Paginación
 const currentPage = ref(1)
 const pageSize = 20
 
 const dayNames = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado']
 
-// Servicios filtrados por fecha del modal de cancelación
+// Servicios filtrados por fecha del modal de cancelación (excluye cancelados)
 const servicesForDate = computed(() => {
   if (!cancelSessionDate.value) return services.value
   const date = new Date(cancelSessionDate.value + 'T12:00:00')
   const dayName = dayNames[date.getDay()]
   return services.value.filter(s => {
-    if (s.frequency === 'weekly') return s.days_of_week?.includes(dayName)
-    if (s.frequency === 'one_time') return s.event_date === cancelSessionDate.value
+    if (s.frequency === 'weekly' && !s.days_of_week?.includes(dayName)) return false
+    if (s.frequency === 'one_time' && s.event_date !== cancelSessionDate.value) return false
+    // Excluir servicios ya cancelados en esa fecha
+    if (cancelledServiceKeys.value.has(s.id)) return false
     return true
   })
 })
@@ -56,13 +69,23 @@ watch(cancelSessionDate, () => {
 })
 
 onMounted(async () => {
-  await Promise.all([fetchBookings(), fetchServices(), fetchProfessionals()])
+  await Promise.all([fetchBookings(), fetchServices(), fetchProfessionals(), fetchCancelledServices()])
   loading.value = false
 })
 
 async function fetchBookings() { try { bookings.value = await BookingService.getAll() } catch (e: any) { error.value = e.message } }
 async function fetchServices() { if (!authStore.companyId) return; try { services.value = await ServiceService.getAll(authStore.companyId) } catch (e: any) { error.value = e.message } }
 async function fetchProfessionals() { if (!authStore.companyId) return; try { professionals.value = await ProfessionalService.getAll(authStore.companyId) } catch (e: any) { error.value = e.message } }
+async function fetchCancelledServices() {
+  if (!authStore.companyId) return
+  try {
+    const { data } = await supabase
+      .from('cancelled_service_sessions')
+      .select('date, service_id')
+      .eq('company_id', authStore.companyId)
+    cancelledServices.value = data || []
+  } catch (e: any) { error.value = e.message }
+}
 
 async function markAttendance(bookingId: string, status: 'attended' | 'no_show') {
   processingId.value = bookingId

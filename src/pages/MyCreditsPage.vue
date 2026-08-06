@@ -3,10 +3,28 @@ import { useAuthStore } from '@/stores/auth'
 import { useCreditStore } from '@/stores/credit'
 import SkeletonStats from '@/components/SkeletonStats.vue'
 import SkeletonCard from '@/components/SkeletonCard.vue'
-import { computed, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 
 const authStore = useAuthStore()
 const creditStore = useCreditStore()
+
+const visibleCount = ref(10)
+
+const visibleMovements = computed(() => {
+  return creditStore.movements.slice(0, visibleCount.value)
+})
+
+const hasMore = computed(() => {
+  return creditStore.movements.length > visibleCount.value
+})
+
+const remainingCount = computed(() => {
+  return creditStore.movements.length - visibleCount.value
+})
+
+function loadMore() {
+  visibleCount.value += 10
+}
 
 const earliestExpiry = computed(() => {
   const now = new Date()
@@ -92,7 +110,7 @@ function getExpiryDaysLeft(expiresAt: string): number {
         No hay movimientos registrados.
       </div>
       <div v-else class="divide-y" :style="{ borderColor: 'var(--color-border)' }">
-        <div v-for="m in creditStore.movements" :key="m.id" class="p-4 flex justify-between items-start">
+        <div v-for="m in visibleMovements" :key="m.id" class="p-4 flex justify-between items-start">
           <div class="flex-1">
             <div class="flex items-center space-x-2 mb-1">
               <p class="font-medium" :class="getExpiryClass(m.expires_at)" style="color: var(--color-text)">{{ m.description }}</p>
@@ -113,6 +131,12 @@ function getExpiryDaysLeft(expiresAt: string): number {
             {{ m.amount > 0 ? '+' : '' }}{{ m.amount }}
           </span>
         </div>
+      </div>
+      <!-- Ver más -->
+      <div v-if="hasMore" class="p-4 text-center border-t" :style="{ borderColor: 'var(--color-border)' }">
+        <button @click="loadMore" class="px-4 py-2 rounded-lg text-sm cursor-pointer hover:opacity-80" :style="{ color: 'var(--color-primary)' }">
+          Ver más ({{ remainingCount }} restantes)
+        </button>
       </div>
     </div>
     </template>

@@ -244,7 +244,7 @@ const weekDays = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa', 'Do']
 
             <!-- Reservation indicator -->
             <span
-              v-if="day.hasReservation && day.isCurrentMonth"
+              v-else-if="day.hasReservation && day.isCurrentMonth"
               class="w-1.5 h-1.5 rounded-full bg-indigo-500"
               title="Tenés reserva este día"
             ></span>

@@ -4,7 +4,7 @@ import { useAuthStore } from '@/stores/auth'
 import { BookingService } from '@/services/BookingService'
 import { CompanyService } from '@/services/CompanyService'
 import { getProfessionalDisplayName } from '@/types'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import TimeWindowModal from '@/components/TimeWindowModal.vue'
 import ConfirmModal from '@/components/ConfirmModal.vue'
 import SkeletonCard from '@/components/SkeletonCard.vue'
@@ -19,8 +19,8 @@ const showModal = ref(false)
 const modalTipo = ref<'reservar' | 'cancelar'>('cancelar')
 const modalMinutos = ref(0)
 const modalVentana = ref(0)
+const activeTab = ref<'pending' | 'past' | 'cancelled'>('pending')
 
-// Confirm modal
 const showConfirm = ref(false)
 const confirmBookingId = ref('')
 
@@ -34,6 +34,21 @@ function formatDateAR(dateStr: string): string {
   const year = date.getFullYear()
   return `${day} ${dayOfMonth}/${month}/${year}`
 }
+
+// Conteo por tab
+const pendingCount = computed(() => bookingStore.bookings.filter(b => b.status === 'pending').length)
+const pastCount = computed(() => bookingStore.bookings.filter(b => b.status === 'attended' || b.status === 'no_show').length)
+const cancelledCount = computed(() => bookingStore.bookings.filter(b => b.status === 'cancelled').length)
+
+// Filtrado por tab
+const filteredBookings = computed(() => {
+  switch (activeTab.value) {
+    case 'pending': return bookingStore.bookings.filter(b => b.status === 'pending')
+    case 'past': return bookingStore.bookings.filter(b => b.status === 'attended' || b.status === 'no_show')
+    case 'cancelled': return bookingStore.bookings.filter(b => b.status === 'cancelled')
+    default: return bookingStore.bookings
+  }
+})
 
 onMounted(async () => {
   await bookingStore.fetchUserBookings()
@@ -80,20 +95,46 @@ const getEstadoBadgeClass = (status: string) => {
     default: return 'bg-gray-100 text-gray-800'
   }
 }
+
+const statusLabels: Record<string, string> = {
+  pending: 'Pendiente',
+  cancelled: 'Cancelada',
+  attended: 'Asistió',
+  no_show: 'Ausente',
+}
 </script>
 
 <template>
   <div>
     <h1 class="text-2xl font-bold mb-6" style="color: var(--color-text)">Mis Reservas</h1>
 
+    <!-- Tabs -->
+    <div v-if="!bookingStore.loading && bookingStore.bookings.length > 0" class="flex space-x-1 mb-6 border-b" :style="{ borderColor: 'var(--color-border)' }">
+      <button @click="activeTab = 'pending'"
+        class="px-4 py-2 text-sm font-medium rounded-t-lg transition-colors cursor-pointer"
+        :style="{ backgroundColor: activeTab === 'pending' ? 'var(--color-primary-subtle)' : 'transparent', color: activeTab === 'pending' ? 'var(--color-primary)' : 'var(--color-text-muted)', borderBottom: activeTab === 'pending' ? '2px solid var(--color-primary)' : '2px solid transparent' }">
+        Pendientes ({{ pendingCount }})
+      </button>
+      <button @click="activeTab = 'past'"
+        class="px-4 py-2 text-sm font-medium rounded-t-lg transition-colors cursor-pointer"
+        :style="{ backgroundColor: activeTab === 'past' ? 'var(--color-primary-subtle)' : 'transparent', color: activeTab === 'past' ? 'var(--color-primary)' : 'var(--color-text-muted)', borderBottom: activeTab === 'past' ? '2px solid var(--color-primary)' : '2px solid transparent' }">
+        Realizadas ({{ pastCount }})
+      </button>
+      <button @click="activeTab = 'cancelled'"
+        class="px-4 py-2 text-sm font-medium rounded-t-lg transition-colors cursor-pointer"
+        :style="{ backgroundColor: activeTab === 'cancelled' ? 'var(--color-primary-subtle)' : 'transparent', color: activeTab === 'cancelled' ? 'var(--color-primary)' : 'var(--color-text-muted)', borderBottom: activeTab === 'cancelled' ? '2px solid var(--color-primary)' : '2px solid transparent' }">
+        Canceladas ({{ cancelledCount }})
+      </button>
+    </div>
+
     <SkeletonCard v-if="bookingStore.loading" :count="3" :lines="3" class="grid-cols-1 md:grid-cols-2 lg:grid-cols-3" />
 
-    <div v-else-if="bookingStore.bookings.length === 0" class="text-center py-8" style="color: var(--color-text-muted)">
-      No tenés reservas activas.
+    <div v-else-if="filteredBookings.length === 0" class="text-center py-8" style="color: var(--color-text-muted)">
+      No hay reservas en esta categoría.
     </div>
 
     <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      <div v-for="booking in bookingStore.bookings" :key="booking.id" class="rounded-lg shadow p-4" style="background-color: var(--color-surface)">
+      <div v-for="booking in filteredBookings" :key="booking.id" class="rounded-lg shadow p-4" style="background-color: var(--color-surface)">
         <div class="flex justify-between items-start">
           <div>
             <h3 class="font-semibold" style="color: var(--color-text)">{{ booking.services?.name }}</h3>
@@ -110,7 +151,7 @@ const getEstadoBadgeClass = (status: string) => {
                 {{ booking.modality === 'in_person' ? 'Presencial' : 'Virtual' }}
               </span>
               <span :class="[getEstadoBadgeClass(booking.status), 'px-2 py-1 rounded-full text-xs font-medium']">
-                {{ booking.status }}
+                {{ statusLabels[booking.status] || booking.status }}
               </span>
             </div>
           </div>

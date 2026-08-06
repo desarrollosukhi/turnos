@@ -74,8 +74,8 @@ BEGIN
     p_service_id,
     'Sesión cancelada',
     'La sesión del ' || to_char(p_date, 'DD/MM/YYYY') || ' fue cancelada. Se devolvieron los créditos a los alumnos afectados.',
-    'service_bookings',
-    p_date,
+    'all',
+    CURRENT_DATE,
     true
   );
 

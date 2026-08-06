@@ -29,16 +29,50 @@ const announcements = ref<AnnouncementWithDetails[]>([])
 const loading = ref(true)
 const error = ref('')
 
-// Anuncios descartados (localStorage)
-function getDismissedIds(): string[] {
-  try { return JSON.parse(localStorage.getItem('dismissed_announcements') || '[]') } catch { return [] }
+// Anuncios descartados (localStorage con timestamps)
+function getDismissedMap(): Record<string, number> {
+  try {
+    const raw = localStorage.getItem('dismissed_announcements')
+    if (!raw) return {}
+    const parsed = JSON.parse(raw)
+    // Formato array (viejo) → convertir a objeto
+    if (Array.isArray(parsed)) {
+      const map: Record<string, number> = {}
+      parsed.forEach((id: string) => { map[id] = Date.now() })
+      localStorage.setItem('dismissed_announcements', JSON.stringify(map))
+      return map
+    }
+    // Formato objeto (nuevo) → verificar que sea válido
+    if (typeof parsed === 'object' && parsed !== null) {
+      return parsed as Record<string, number>
+    }
+    return {}
+  } catch { return {} }
 }
 
-function dismissAnnouncement(id: string) {
-  const dismissed = getDismissedIds()
-  dismissed.push(id)
-  localStorage.setItem('dismissed_announcements', JSON.stringify(dismissed))
+// Recordarme más tarde — cierra para esta sesión, vuelve a aparecer al recargar
+function remindLater(id: string) {
   announcements.value = announcements.value.filter(a => a.id !== id)
+}
+
+// No volver a mostrar — guarda en localStorage permanentemente
+function dismissForever(id: string) {
+  const dismissed = getDismissedMap()
+  dismissed[id] = Date.now()
+  localStorage.setItem('dismissed_announcements', JSON.stringify(dismissed))
+  console.log('[Home] dismissForever:', id, 'Map:', JSON.stringify(dismissed))
+  announcements.value = announcements.value.filter(a => a.id !== id)
+}
+
+// Verificar si un anuncio está descartado
+function isAnnouncementDismissed(id: string, reactivatedAt: string | null): boolean {
+  const dismissed = getDismissedMap()
+  if (!dismissed[id]) return false
+  if (reactivatedAt) {
+    const reactivatedTime = new Date(reactivatedAt).getTime()
+    if (reactivatedTime > dismissed[id]) return false
+  }
+  return true
 }
 
 onMounted(async () => {
@@ -50,13 +84,9 @@ onMounted(async () => {
       AnnouncementService.getActive(authStore.companyId || '', authStore.user.id),
     ])
     balance.value = bal
-    // Filtrar anuncios descartados
-    const dismissed = getDismissedIds()
-    console.log('[Home] User:', authStore.user?.id, 'Company:', authStore.companyId)
-    console.log('[Home] Announcements raw:', anns)
-    console.log('[Home] Dismissed IDs:', dismissed)
-    announcements.value = anns.filter(a => !dismissed.includes(a.id))
-    console.log('[Home] Announcements after filter:', announcements.value)
+    console.log('[Home] Announcements raw:', anns.length, 'Dismissed map:', getDismissedMap())
+    announcements.value = anns.filter(a => !isAnnouncementDismissed(a.id, a.reactivated_at || null))
+    console.log('[Home] Announcements after filter:', announcements.value.length)
     const today = new Date().toISOString().split('T')[0] ?? ''
     upcomingBookings.value = bookings
       .filter(b => b.status === 'pending' && b.date >= today)
@@ -82,15 +112,23 @@ onMounted(async () => {
       <div class="space-y-3">
         <div v-for="a in announcements" :key="a.id" class="rounded-lg p-4" style="background-color: var(--color-surface)">
           <div class="flex justify-between items-start">
-            <div>
+            <div class="flex-1">
               <h3 class="font-semibold" style="color: var(--color-text)">{{ a.title }}</h3>
-              <p class="text-sm mt-1" style="color: var(--color-text-muted)">{{ a.content }}</p>
+              <div class="text-sm mt-1 prose prose-sm max-w-none" style="color: var(--color-text-muted)" v-html="a.content"></div>
               <div class="flex items-center space-x-3 mt-2 text-xs" style="color: var(--color-text-muted)">
                 <span>{{ a.professional_name }}</span>
                 <span v-if="a.service_name">· {{ a.service_name }}</span>
               </div>
             </div>
-            <button @click="dismissAnnouncement(a.id)" class="ml-2 text-sm cursor-pointer hover:opacity-80" style="color: var(--color-text-muted)">✕</button>
+          <div class="flex flex-col space-y-1 ml-4">
+            <button @click="remindLater(a.id)" class="text-xs px-2 py-1 rounded cursor-pointer hover:opacity-80" style="background-color: var(--color-primary-subtle); color: var(--color-primary)">
+              ⏰ Recordarme
+            </button>
+            <button @click="dismissForever(a.id)" class="text-xs px-2 py-1 rounded cursor-pointer hover:opacity-80" style="background-color: #fef2f2; color: #991b1b">
+              🚫 No mostrar
+            </button>
+            <span class="text-[10px] opacity-30">{{ a.id }}</span>
+          </div>
           </div>
         </div>
       </div>

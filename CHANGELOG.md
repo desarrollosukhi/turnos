@@ -1,5 +1,41 @@
 # Changelog
 
+## v1.1.0 — Avisos, UX y Fixes (2026-08-05)
+
+### Avisos (Anuncios)
+- CRUD completo de avisos para administradores (`/admin/announcements`)
+- Editor de rich text (Tiptap) para contenido de avisos
+- Dos modos de descarte: "Recordarme" (sesión) y "No mostrar" (permanente en localStorage)
+- Reactivación de avisos: si el admin reactiva un aviso descartado, vuelve a mostrarse al cliente
+- Anuncios de cancelación de sesión ahora se muestran a todos los alumnos (target: 'all')
+- Fecha de anuncios automáticos usa `CURRENT_DATE` en vez de la fecha de la sesión
+- Migración: columna `reactivated_at` en tabla `announcements`
+- Fix: función SQL `get_active_announcements` ahora retorna `reactivated_at`
+- Fix: `DROP FUNCTION` necesario para cambiar tipo de retorno de la función
+
+### Reservas del cliente — Tabs
+- Tabs Pendientes / Realizadas / Canceladas con conteo
+- Labels de estado en español (Pendiente, Asistió, Ausente, Cancelada)
+
+### Créditos — Paginación
+- Botón "Ver más" para historial de movimientos (carga de 10 en 10)
+
+### Calendario
+- Fix: indicador de reserva solo se muestra si no hay sesión cancelada (`v-else-if`)
+
+### Admin Reservas
+- Excluir servicios ya cancelados del modal de cancelación de sesión
+- Fetch de `cancelled_service_sessions` para filtrar correctamente
+
+### Panel administrador
+- Nuevo menú "Avisos" en sidebar del admin
+
+### Dependencias
+- `@tiptap/vue-3`, `@tiptap/starter-kit`, `@tiptap/pm` — editor rich text
+- `marked` — renderizado de markdown
+
+---
+
 ## v1.0.0 — MVP Completo (2026-07-30)
 
 ### Multi-Tenant

@@ -3,6 +3,8 @@
 -- Ahora muestra anuncios para reservas pending O cancelled
 -- ============================================
 
+DROP FUNCTION IF EXISTS get_active_announcements(uuid, uuid);
+
 CREATE OR REPLACE FUNCTION get_active_announcements(
   p_company_id UUID,
   p_user_id UUID DEFAULT NULL
@@ -16,6 +18,7 @@ RETURNS TABLE(
   target TEXT,
   date_from DATE,
   date_to DATE,
+  reactivated_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ
 )
 LANGUAGE plpgsql
@@ -33,6 +36,7 @@ BEGIN
     a.target,
     a.date_from,
     a.date_to,
+    a.reactivated_at,
     a.created_at
   FROM announcements a
   LEFT JOIN professionals p ON p.id = a.professional_id

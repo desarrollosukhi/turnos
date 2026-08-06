@@ -26,6 +26,7 @@ const menuItems = computed(() => [
   { name: labels.value.services, to: '/admin/services', icon: '🧘' },
   { name: 'Reservas', to: '/admin/bookings', icon: '📋' },
   { name: 'Créditos', to: '/admin/credits', icon: '💰' },
+  { name: 'Avisos', to: '/admin/announcements', icon: '📢' },
   { name: 'Reportes', to: '/admin/reports', icon: '📈' },
   { name: 'Configuración', to: '/admin/settings', icon: '⚙️' },
 ])
