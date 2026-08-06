@@ -930,86 +930,280 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen" style="background-color: var(--color-background)">
-    <!-- Page header -->
-    <div class="border-b" style="border-color: var(--color-border); background-color: var(--color-surface)">
-      <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 class="text-3xl font-bold mb-2" style="color: var(--color-text)">Documentación</h1>
-        <p class="text-lg" style="color: var(--color-text-muted)">Guía completa para usar la plataforma</p>
-
-        <!-- Tabs -->
-        <div class="flex gap-2 mt-6">
-          <button
-            v-for="tab in tabs"
-            :key="tab.id"
-            @click="activeTab = tab.id; selectSection('')"
-            class="px-4 py-2 rounded-lg text-sm font-medium transition-all"
-            :style="{
-              backgroundColor: activeTab === tab.id ? 'var(--color-primary)' : 'transparent',
-              color: activeTab === tab.id ? 'white' : 'var(--color-text-muted)',
-            }">
-            {{ tab.icon }} {{ tab.label }}
-          </button>
-        </div>
+  <div class="docs-layout">
+    <!-- Top Tabs -->
+    <div class="docs-topbar">
+      <div class="docs-topbar-inner">
+        <button
+          v-for="tab in tabs"
+          :key="tab.id"
+          @click="activeTab = tab.id; selectSection('')"
+          class="docs-tab"
+          :class="{ active: activeTab === tab.id }">
+          <span class="docs-tab-icon">{{ tab.icon }}</span>
+          {{ tab.label }}
+        </button>
       </div>
     </div>
 
-    <!-- Content area -->
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div class="flex gap-8">
-        <!-- Mobile menu toggle -->
-        <button
-          @click="mobileMenuOpen = !mobileMenuOpen"
-          class="lg:hidden fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full shadow-lg flex items-center justify-center text-white"
-          style="background-color: var(--color-primary)">
-          <svg v-if="!mobileMenuOpen" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-          <svg v-else class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+    <div class="docs-body">
+      <!-- Mobile menu toggle -->
+      <button
+        @click="mobileMenuOpen = !mobileMenuOpen"
+        class="docs-mobile-toggle">
+        <svg v-if="!mobileMenuOpen" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+        <svg v-else class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
 
-        <!-- Sidebar -->
-        <aside
-          :class="[
-            'lg:w-64 flex-shrink-0',
-            mobileMenuOpen ? 'fixed inset-0 z-40 bg-white p-6 overflow-y-auto lg:static lg:bg-transparent lg:p-0' : 'hidden lg:block'
-          ]">
-          <nav class="space-y-6">
-            <div v-for="group in allDocs" :key="group.id">
-              <h3 class="text-sm font-semibold mb-2 flex items-center gap-2" style="color: var(--color-text)">
-                <span>{{ group.icon }}</span>
-                {{ group.title }}
-              </h3>
-              <ul class="space-y-1 ml-7">
-                <li v-for="section in group.sections" :key="section.id">
-                  <button
-                    @click="selectSection(section.id)"
-                    class="w-full text-left px-3 py-1.5 text-sm rounded-md transition-colors"
-                    :style="{
-                      backgroundColor: activeSection === section.id ? 'var(--color-primary-subtle)' : 'transparent',
-                      color: activeSection === section.id ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                      fontWeight: activeSection === section.id ? '500' : '400',
-                    }">
-                    {{ section.title }}
-                  </button>
-                </li>
-              </ul>
-            </div>
-          </nav>
-        </aside>
-
-        <!-- Main content -->
-        <main class="flex-1 min-w-0 lg:ml-0" :class="{ 'ml-0': !mobileMenuOpen }">
-          <div class="prose max-w-none" v-html="renderedContent"></div>
-        </main>
+      <!-- Mobile overlay -->
+      <div
+        v-if="mobileMenuOpen"
+        class="docs-overlay"
+        @click="mobileMenuOpen = false">
       </div>
+
+      <!-- Sidebar -->
+      <aside
+        :class="['docs-sidebar', { open: mobileMenuOpen }]">
+        <nav class="docs-sidebar-nav">
+          <div v-for="group in allDocs" :key="group.id" class="docs-sidebar-group">
+            <h3 class="docs-sidebar-title">{{ group.title }}</h3>
+            <ul class="docs-sidebar-list">
+              <li v-for="section in group.sections" :key="section.id">
+                <button
+                  @click="selectSection(section.id)"
+                  class="docs-sidebar-item"
+                  :class="{ active: activeSection === section.id }">
+                  {{ section.title }}
+                </button>
+              </li>
+            </ul>
+          </div>
+        </nav>
+      </aside>
+
+      <!-- Main content -->
+      <main class="docs-content">
+        <div class="docs-content-inner">
+          <div class="prose" v-html="renderedContent"></div>
+        </div>
+      </main>
     </div>
   </div>
 </template>
 
 <style scoped>
+.docs-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-background);
+}
+
+/* Top bar */
+.docs-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.docs-topbar-inner {
+  max-width: 100%;
+  display: flex;
+  gap: 0;
+  padding: 0;
+}
+
+.docs-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.docs-tab:hover {
+  color: var(--color-text);
+}
+
+.docs-tab.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.docs-tab-icon {
+  font-size: 1rem;
+}
+
+/* Body layout */
+.docs-body {
+  display: flex;
+  flex: 1;
+  position: relative;
+}
+
+/* Mobile toggle */
+.docs-mobile-toggle {
+  display: none;
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 50;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s;
+}
+
+.docs-mobile-toggle:hover {
+  transform: scale(1.1);
+}
+
+@media (max-width: 1023px) {
+  .docs-mobile-toggle {
+    display: flex;
+  }
+}
+
+/* Overlay */
+.docs-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  z-index: 40;
+}
+
+@media (max-width: 1023px) {
+  .docs-overlay {
+    display: block;
+  }
+}
+
+/* Sidebar */
+.docs-sidebar {
+  width: 16rem;
+  flex-shrink: 0;
+  background-color: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  overflow-y: auto;
+  position: sticky;
+  top: 3.5rem;
+  height: calc(100vh - 3.5rem);
+}
+
+@media (max-width: 1023px) {
+  .docs-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 45;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    border-right: 1px solid var(--color-border);
+  }
+
+  .docs-sidebar.open {
+    transform: translateX(0);
+  }
+}
+
+.docs-sidebar-nav {
+  padding: 1.5rem 0;
+}
+
+.docs-sidebar-group {
+  margin-bottom: 1.5rem;
+}
+
+.docs-sidebar-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text);
+  padding: 0 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.docs-sidebar-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.docs-sidebar-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.5rem 1.5rem 0.5rem 1.75rem;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  border-left: 3px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+  line-height: 1.4;
+}
+
+.docs-sidebar-item:hover {
+  color: var(--color-text);
+  background-color: var(--color-background);
+}
+
+.docs-sidebar-item.active {
+  color: var(--color-primary);
+  border-left-color: var(--color-primary);
+  font-weight: 500;
+}
+
+/* Content */
+.docs-content {
+  flex: 1;
+  min-width: 0;
+  padding: 2rem 3rem;
+}
+
+@media (max-width: 1023px) {
+  .docs-content {
+    padding: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .docs-content {
+    max-width: 52rem;
+  }
+}
+
+.docs-content-inner {
+  max-width: 100%;
+}
+
+/* Prose styles */
 .prose {
   color: var(--color-text);
 }
@@ -1020,13 +1214,14 @@ onMounted(() => {
   margin-bottom: 1rem;
   margin-top: 2rem;
   color: var(--color-text);
+  line-height: 1.2;
 }
 
 .prose :deep(h2) {
   font-size: 1.5rem;
   font-weight: 600;
   margin-bottom: 0.75rem;
-  margin-top: 2rem;
+  margin-top: 2.5rem;
   padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--color-border);
   color: var(--color-text);
@@ -1042,7 +1237,7 @@ onMounted(() => {
 
 .prose :deep(p) {
   margin-bottom: 1rem;
-  line-height: 1.7;
+  line-height: 1.75;
   color: var(--color-text-muted);
 }
 
@@ -1053,7 +1248,7 @@ onMounted(() => {
 
 .prose :deep(li) {
   margin-bottom: 0.5rem;
-  line-height: 1.6;
+  line-height: 1.7;
   color: var(--color-text-muted);
 }
 
