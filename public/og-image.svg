@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1"/>
+      <stop offset="100%" style="stop-color:#8b5cf6"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect x="60" y="60" width="1080" height="510" rx="24" fill="rgba(255,255,255,0.1)"/>
+  <circle cx="200" cy="280" r="80" fill="rgba(255,255,255,0.15)"/>
+  <rect x="165" y="240" width="70" height="80" rx="8" fill="none" stroke="white" stroke-width="4"/>
+  <rect x="165" y="230" width="70" height="20" rx="6" fill="none" stroke="white" stroke-width="4"/>
+  <line x1="185" y1="230" x2="185" y2="220" stroke="white" stroke-width="4" stroke-linecap="round"/>
+  <line x1="215" y1="230" x2="215" y2="220" stroke="white" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="185" cy="270" r="6" fill="white"/>
+  <circle cx="215" cy="270" r="6" fill="white"/>
+  <circle cx="185" cy="300" r="6" fill="white"/>
+  <circle cx="215" cy="300" r="6" fill="white"/>
+  <text x="340" y="260" font-family="system-ui, -apple-system, sans-serif" font-size="56" font-weight="700" fill="white">Gestión de</text>
+  <text x="340" y="330" font-family="system-ui, -apple-system, sans-serif" font-size="56" font-weight="700" fill="white">Reservas</text>
+  <text x="340" y="400" font-family="system-ui, -apple-system, sans-serif" font-size="24" fill="rgba(255,255,255,0.7)">Administrá clases, profesores y alumnos en un solo lugar</text>
+</svg>
