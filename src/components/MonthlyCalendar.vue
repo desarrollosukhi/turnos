@@ -18,12 +18,12 @@ const emit = defineEmits<{
 }>()
 
 const currentMonth = computed(() => {
-  const date = new Date(props.selectedDate + 'T12:00:00')
+  const date = new Date(props.selectedDate + 'T12:00')
   return date.getMonth()
 })
 
 const currentYear = computed(() => {
-  const date = new Date(props.selectedDate + 'T12:00:00')
+  const date = new Date(props.selectedDate + 'T12:00')
   return date.getFullYear()
 })
 
@@ -40,9 +40,22 @@ const weeks = computed(() => {
   const startDayOfWeek = firstDay.getDay() // 0=dom, 1=lun...
   const totalDays = lastDay.getDate()
 
-  const weeks: { date: string; dayOfMonth: number; isCurrentMonth: boolean; isToday: boolean; isSelected: boolean; hasClasses: boolean; isHoliday: boolean; isCancelled: boolean; isPartiallyCancelled: boolean; hasReservation: boolean; isAttended: boolean; isPast: boolean }[][] = []
+  const weeks: {
+    date: string
+    dayOfMonth: number
+    isCurrentMonth: boolean
+    isToday: boolean
+    isSelected: boolean
+    hasClasses: boolean
+    isHoliday: boolean
+    isCancelled: boolean
+    isPartiallyCancelled: boolean
+    hasReservation: boolean
+    isAttended: boolean
+    isPast: boolean
+  }[][] = []
 
-  let currentWeek: typeof weeks[0] = []
+  let currentWeek: (typeof weeks)[0] = []
 
   // Días del mes anterior
   const prevMonthLastDay = new Date(year, month, 0).getDate()
@@ -140,34 +153,19 @@ function selectDate(date: string) {
   emit('select', date)
 }
 
-const weekDays = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa', 'Do']
+const weekDays = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa']
 </script>
 
 <template>
   <div class="rounded-lg shadow p-4" style="background-color: var(--color-surface)">
     <!-- Header -->
     <div class="flex items-center justify-between mb-4">
-      <button
-        @click="prevMonth"
-        class="p-2 hover:bg-gray-100 rounded-lg text-gray-600"
-      >
-        ◄
-      </button>
+      <button @click="prevMonth" class="p-2 hover:bg-gray-100 rounded-lg text-gray-600">◄</button>
       <div class="flex items-center space-x-3">
         <h3 class="text-lg font-semibold capitalize">{{ monthName }}</h3>
-        <button
-          @click="goToToday"
-          class="text-sm text-blue-600 hover:text-blue-800"
-        >
-          Hoy
-        </button>
+        <button @click="goToToday" class="text-sm text-blue-600 hover:text-blue-800">Hoy</button>
       </div>
-      <button
-        @click="nextMonth"
-        class="p-2 hover:bg-gray-100 rounded-lg text-gray-600"
-      >
-        ►
-      </button>
+      <button @click="nextMonth" class="p-2 hover:bg-gray-100 rounded-lg text-gray-600">►</button>
     </div>
 
     <!-- Week days header -->
@@ -189,18 +187,35 @@ const weekDays = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa', 'Do']
           :key="day.date"
           @click="selectDate(day.date)"
           :class="[
-            'relative flex flex-col items-center justify-center p-1 sm:p-2 rounded-lg text-sm transition-all min-h-[48px] sm:min-h-[60px]',
+            'relative flex flex-col items-center justify-center p-1 sm:p-2 rounded-lg text-sm transition-all min-h-12 sm:min-h-16 hover:bg-gray-100 hover:shadow',
             day.isCurrentMonth ? 'text-gray-900' : 'text-gray-300',
             day.isSelected ? 'ring-2 ring-blue-500 bg-blue-50 font-bold' : '',
             day.isToday && !day.isSelected ? 'ring-1 ring-blue-300' : '',
             day.isHoliday && day.isCurrentMonth ? 'bg-red-50 border-2 border-red-300' : '',
             day.isCancelled && day.isCurrentMonth ? 'bg-gray-50 border-2 border-gray-300' : '',
-            day.isPartiallyCancelled && day.isCurrentMonth && !day.isSelected ? 'bg-orange-50 border-2 border-orange-300' : '',
-            day.hasReservation && day.isCurrentMonth && !day.isSelected ? 'border-2 border-indigo-400 bg-indigo-50' : '',
-            day.isAttended && day.isCurrentMonth && !day.isSelected ? 'border-2 border-emerald-400 bg-emerald-50' : '',
-            day.isPast && day.isCurrentMonth && !day.isSelected ? 'opacity-50 cursor-not-allowed' : '',
-            !day.isPast && !day.isHoliday && !day.isCancelled && day.hasClasses && day.isCurrentMonth && !day.hasReservation ? 'hover:bg-green-50 cursor-pointer' : '',
-            !day.hasClasses && day.isCurrentMonth && !day.isHoliday && !day.isPast ? 'cursor-default' : '',
+            day.isPartiallyCancelled && day.isCurrentMonth && !day.isSelected
+              ? 'bg-orange-50 border-2 border-orange-300'
+              : '',
+            day.hasReservation && day.isCurrentMonth && !day.isSelected
+              ? 'border-2 border-indigo-400 bg-indigo-50'
+              : '',
+            day.isAttended && day.isCurrentMonth && !day.isSelected
+              ? 'border-2 border-emerald-400 bg-emerald-50'
+              : '',
+            day.isPast && day.isCurrentMonth && !day.isSelected
+              ? 'opacity-50 cursor-not-allowed'
+              : '',
+            !day.isPast &&
+            !day.isHoliday &&
+            !day.isCancelled &&
+            day.hasClasses &&
+            day.isCurrentMonth &&
+            !day.hasReservation
+              ? 'hover:bg-green-50 cursor-pointer'
+              : '',
+            !day.hasClasses && day.isCurrentMonth && !day.isHoliday && !day.isPast
+              ? 'cursor-default'
+              : '',
           ]"
         >
           <span class="text-xs sm:text-sm">{{ day.dayOfMonth }}</span>
@@ -258,32 +273,50 @@ const weekDays = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa', 'Do']
       <div class="flex items-center space-x-1 group relative">
         <span class="w-2 h-2 rounded-full bg-green-500"></span>
         <span>Libre</span>
-        <span class="hidden group-hover:inline-block absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-gray-800 rounded whitespace-nowrap z-10">Hay clases disponibles este día</span>
+        <span
+          class="hidden group-hover:inline-block absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-gray-800 rounded whitespace-nowrap z-10"
+          >Hay clases disponibles este día</span
+        >
       </div>
       <div class="flex items-center space-x-1 group relative">
         <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
         <span>Reservado</span>
-        <span class="hidden group-hover:inline-block absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-gray-800 rounded whitespace-nowrap z-10">Tenés una reserva pendiente</span>
+        <span
+          class="hidden group-hover:inline-block absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-gray-800 rounded whitespace-nowrap z-10"
+          >Tenés una reserva pendiente</span
+        >
       </div>
       <div class="flex items-center space-x-1 group relative">
         <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
         <span>Asistido</span>
-        <span class="hidden group-hover:inline-block absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-gray-800 rounded whitespace-nowrap z-10">Asististe a todas las clases</span>
+        <span
+          class="hidden group-hover:inline-block absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-gray-800 rounded whitespace-nowrap z-10"
+          >Asististe a todas las clases</span
+        >
       </div>
       <div class="flex items-center space-x-1 group relative">
         <span class="w-2 h-2 rounded-full bg-red-500"></span>
         <span>Feriado</span>
-        <span class="hidden group-hover:inline-block absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-gray-800 rounded whitespace-nowrap z-10">Día feriado — no hay clases</span>
+        <span
+          class="hidden group-hover:inline-block absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-gray-800 rounded whitespace-nowrap z-10"
+          >Día feriado — no hay clases</span
+        >
       </div>
       <div class="flex items-center space-x-1 group relative">
         <span class="w-2 h-2 rounded-full bg-gray-400"></span>
         <span>Cancelada</span>
-        <span class="hidden group-hover:inline-block absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-gray-800 rounded whitespace-nowrap z-10">Todos los servicios cancelados</span>
+        <span
+          class="hidden group-hover:inline-block absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-gray-800 rounded whitespace-nowrap z-10"
+          >Todos los servicios cancelados</span
+        >
       </div>
       <div class="flex items-center space-x-1 group relative">
         <span class="w-2 h-2 rounded-full bg-orange-400"></span>
         <span>Parcial</span>
-        <span class="hidden group-hover:inline-block absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-gray-800 rounded whitespace-nowrap z-10">Algunas clases canceladas — hay otras disponibles</span>
+        <span
+          class="hidden group-hover:inline-block absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-gray-800 rounded whitespace-nowrap z-10"
+          >Algunas clases canceladas — hay otras disponibles</span
+        >
       </div>
     </div>
   </div>

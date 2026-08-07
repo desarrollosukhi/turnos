@@ -50,9 +50,9 @@ const windowCache = ref<Map<string, BookingWindow>>(new Map())
 // Días que tienen servicios recurrentes
 const serviceDays = computed(() => {
   const days = new Set<number>()
-  serviceStore.services.forEach(s => {
+  serviceStore.services.forEach((s) => {
     if (s.frequency === 'weekly' && s.days_of_week) {
-      s.days_of_week.forEach(d => {
+      s.days_of_week.forEach((d) => {
         const idx = dayNames.indexOf(d)
         if (idx !== -1) days.add(idx)
       })
@@ -66,7 +66,7 @@ const filteredServices = computed(() => {
   const date = new Date(selectedDate.value + 'T12:00:00')
   const diaNombre = dayNames[date.getDay()]
 
-  let result = serviceStore.services.filter(s => {
+  let result = serviceStore.services.filter((s) => {
     if (s.frequency === 'weekly') {
       return s.days_of_week?.includes(diaNombre as any)
     } else if (s.frequency === 'one_time') {
@@ -78,31 +78,34 @@ const filteredServices = computed(() => {
   // Filtro por búsqueda de texto
   if (searchQuery.value) {
     const q = searchQuery.value.toLowerCase()
-    result = result.filter(s =>
-      s.name.toLowerCase().includes(q) ||
-      s.professionals?.name.toLowerCase().includes(q)
+    result = result.filter(
+      (s) => s.name.toLowerCase().includes(q) || s.professionals?.name.toLowerCase().includes(q),
     )
   }
 
   // Filtro por profesional
   if (selectedProfessionalFilter.value) {
-    result = result.filter(s => s.professional_id === selectedProfessionalFilter.value)
+    result = result.filter((s) => s.professional_id === selectedProfessionalFilter.value)
   }
 
   // Filtro por modalidad
   if (selectedModalityFilter.value === 'in_person') {
-    result = result.filter(s => s.allows_in_person)
+    result = result.filter((s) => s.allows_in_person)
   } else if (selectedModalityFilter.value === 'virtual') {
-    result = result.filter(s => s.allows_virtual)
+    result = result.filter((s) => s.allows_virtual)
   }
 
   return result
 })
 
+function formatTime(time: string | null | undefined): string {
+  if (!time) return ''
+  return time.slice(0, 5) // "14:30:00" -> "14:30"
+}
 // Profesionales únicos de los servicios disponibles
 const uniqueProfessionals = computed(() => {
   const map = new Map<string, string>()
-  serviceStore.services.forEach(s => {
+  serviceStore.services.forEach((s) => {
     if (s.professionals) {
       map.set(s.professional_id, s.professionals.name)
     }
@@ -113,25 +116,21 @@ const uniqueProfessionals = computed(() => {
 // IDs de servicios que el usuario ya reservó para el día seleccionado
 const bookedServiceIds = computed(() => {
   return new Set(
-    userBookings.value
-      .filter(b => b.date === selectedDate.value)
-      .map(b => b.service_id)
+    userBookings.value.filter((b) => b.date === selectedDate.value).map((b) => b.service_id),
   )
 })
 
 // Servicios cancelados para el día seleccionado
 const cancelledServiceKeys = computed(() => {
   return new Set(
-    cancelledServices.value
-      .filter(c => c.date === selectedDate.value)
-      .map(c => c.service_id)
+    cancelledServices.value.filter((c) => c.date === selectedDate.value).map((c) => c.service_id),
   )
 })
 
 // Fechas con cancelación parcial (algunos servicios cancelados, otros no)
 const partiallyCancelledDates = computed(() => {
   const dateServiceMap = new Map<string, Set<string>>()
-  cancelledServices.value.forEach(c => {
+  cancelledServices.value.forEach((c) => {
     if (!dateServiceMap.has(c.date)) dateServiceMap.set(c.date, new Set())
     dateServiceMap.get(c.date)!.add(c.service_id)
   })
@@ -141,7 +140,7 @@ const partiallyCancelledDates = computed(() => {
     // Verificar si hay servicios activos en esa fecha que NO están cancelados
     const dateObj = new Date(date + 'T12:00:00')
     const dayName = dayNames[dateObj.getDay()]
-    const hasActiveServices = serviceStore.services.some(s => {
+    const hasActiveServices = serviceStore.services.some((s) => {
       if (cancelledIds.has(s.id)) return false
       if (s.frequency === 'weekly') return s.days_of_week?.includes(dayName as any)
       if (s.frequency === 'one_time') return s.event_date === date
@@ -173,7 +172,12 @@ const isGymMode = computed(() => {
 
 const selectedDateFormatted = computed(() => {
   const date = new Date(selectedDate.value + 'T12:00:00')
-  return date.toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+  return date.toLocaleDateString('es-AR', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
 })
 
 onMounted(async () => {
@@ -206,9 +210,11 @@ async function loadMonthData() {
   try {
     const holidays = await HolidayService.getAll(authStore.companyId)
     holidayDates.value = holidays
-      .filter(h => h.active && h.date >= startDate && h.date < endDate)
-      .map(h => h.date)
-  } catch { monthError.value = 'Error al cargar feriados' }
+      .filter((h) => h.active && h.date >= startDate && h.date < endDate)
+      .map((h) => h.date)
+  } catch {
+    monthError.value = 'Error al cargar feriados'
+  }
 
   try {
     const { data } = await supabase
@@ -221,7 +227,7 @@ async function loadMonthData() {
 
     // cancelledDates: solo fechas donde TODOS los servicios están cancelados
     const dateServiceMap = new Map<string, Set<string>>()
-    ;(data || []).forEach(c => {
+    ;(data || []).forEach((c) => {
       if (!dateServiceMap.has(c.date)) dateServiceMap.set(c.date, new Set())
       dateServiceMap.get(c.date)!.add(c.service_id)
     })
@@ -229,7 +235,7 @@ async function loadMonthData() {
     dateServiceMap.forEach((cancelledIds, date) => {
       const dateObj = new Date(date + 'T12:00:00')
       const dayName = dayNames[dateObj.getDay()]
-      const hasActiveServices = serviceStore.services.some(s => {
+      const hasActiveServices = serviceStore.services.some((s) => {
         if (cancelledIds.has(s.id)) return false
         if (s.frequency === 'weekly') return s.days_of_week?.includes(dayName as any)
         if (s.frequency === 'one_time') return s.event_date === date
@@ -237,7 +243,9 @@ async function loadMonthData() {
       })
       if (!hasActiveServices) cancelledDates.value.push(date)
     })
-  } catch { monthError.value = 'Error al cargar sesiones canceladas' }
+  } catch {
+    monthError.value = 'Error al cargar sesiones canceladas'
+  }
 
   if (authStore.user) {
     try {
@@ -249,8 +257,10 @@ async function loadMonthData() {
         .lt('date', endDate)
         .eq('status', 'pending')
       userBookings.value = data || []
-      reservationDates.value = data?.map(b => b.date) || []
-    } catch { monthError.value = 'Error al cargar tus reservas' }
+      reservationDates.value = data?.map((b) => b.date) || []
+    } catch {
+      monthError.value = 'Error al cargar tus reservas'
+    }
 
     // Cargar fechas donde el usuario asistió a todas las clases
     try {
@@ -261,8 +271,10 @@ async function loadMonthData() {
         .gte('date', startDate)
         .lt('date', endDate)
         .eq('status', 'attended')
-      attendedDates.value = [...new Set(attended?.map(b => b.date) || [])]
-    } catch { /* ignore */ }
+      attendedDates.value = [...new Set(attended?.map((b) => b.date) || [])]
+    } catch {
+      /* ignore */
+    }
   }
   monthLoading.value = false
   calendarLoaded.value = true
@@ -278,10 +290,16 @@ async function getWindow(serviceId: string): Promise<BookingWindow | null> {
   if (windowCache.value.has(key)) return windowCache.value.get(key)!
   if (!authStore.companyId) return null
   try {
-    const window = await BookingService.checkWindow(serviceId, selectedDate.value, authStore.companyId)
+    const window = await BookingService.checkWindow(
+      serviceId,
+      selectedDate.value,
+      authStore.companyId,
+    )
     windowCache.value.set(key, window)
     return window
-  } catch { return null }
+  } catch {
+    return null
+  }
 }
 
 async function handleReserve(serviceId: string, modality: 'in_person' | 'virtual') {
@@ -321,15 +339,30 @@ const getModalityIcon = (a: boolean, v: boolean) => {
   <div>
     <h1 class="text-2xl font-bold mb-6" style="color: var(--color-text)">Servicios Disponibles</h1>
 
-    <div v-if="monthError" class="rounded-lg p-4 mb-6" style="background-color: #fef2f2; color: #991b1b">{{ monthError }}</div>
+    <div
+      v-if="monthError"
+      class="rounded-lg p-4 mb-6"
+      style="background-color: #fef2f2; color: #991b1b"
+    >
+      {{ monthError }}
+    </div>
 
-    <div v-if="!calendarLoaded && monthLoading" class="rounded-lg shadow p-4 mb-6 animate-pulse" style="background-color: var(--color-surface)">
+    <div
+      v-if="!calendarLoaded && monthLoading"
+      class="rounded-lg shadow p-4 mb-6 animate-pulse"
+      style="background-color: var(--color-surface)"
+    >
       <div class="flex justify-between mb-4">
         <div class="h-5 rounded w-32" style="background-color: var(--color-primary-subtle)"></div>
         <div class="h-5 rounded w-16" style="background-color: var(--color-primary-subtle)"></div>
       </div>
       <div class="grid grid-cols-7 gap-1">
-        <div v-for="i in 35" :key="i" class="h-10 rounded" style="background-color: var(--color-primary-subtle)"></div>
+        <div
+          v-for="i in 35"
+          :key="i"
+          class="h-10 rounded"
+          style="background-color: var(--color-primary-subtle)"
+        ></div>
       </div>
     </div>
 
@@ -349,7 +382,11 @@ const getModalityIcon = (a: boolean, v: boolean) => {
     <HolidayBanner :show="isHoliday" />
 
     <!-- Barra de búsqueda y filtros -->
-    <div v-if="!isHoliday && serviceStore.services.length > 3" class="rounded-lg shadow p-4 mb-6" style="background-color: var(--color-surface)">
+    <div
+      v-if="!isHoliday && serviceStore.services.length > 3"
+      class="rounded-lg shadow p-4 mb-6"
+      style="background-color: var(--color-surface)"
+    >
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <input
@@ -357,14 +394,20 @@ const getModalityIcon = (a: boolean, v: boolean) => {
             type="text"
             placeholder="🔍 Buscar clase o profesional..."
             class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2"
-            :style="{ borderColor: 'var(--color-border)', '--tw-ring-color': 'var(--color-primary)' }"
+            :style="{
+              borderColor: 'var(--color-border)',
+              '--tw-ring-color': 'var(--color-primary)',
+            }"
           />
         </div>
         <div>
           <select
             v-model="selectedProfessionalFilter"
             class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2"
-            :style="{ borderColor: 'var(--color-border)', '--tw-ring-color': 'var(--color-primary)' }"
+            :style="{
+              borderColor: 'var(--color-border)',
+              '--tw-ring-color': 'var(--color-primary)',
+            }"
           >
             <option value="">Todos los profesionales</option>
             <option v-for="p in uniqueProfessionals" :key="p.id" :value="p.id">{{ p.name }}</option>
@@ -374,7 +417,10 @@ const getModalityIcon = (a: boolean, v: boolean) => {
           <select
             v-model="selectedModalityFilter"
             class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2"
-            :style="{ borderColor: 'var(--color-border)', '--tw-ring-color': 'var(--color-primary)' }"
+            :style="{
+              borderColor: 'var(--color-border)',
+              '--tw-ring-color': 'var(--color-primary)',
+            }"
           >
             <option value="">Todas las modalidades</option>
             <option value="in_person">🏠 Presencial</option>
@@ -385,68 +431,115 @@ const getModalityIcon = (a: boolean, v: boolean) => {
     </div>
 
     <!-- Gym mode: show schedule -->
-    <div v-if="isGymMode && gymSchedule && !isHoliday" class="rounded-lg p-4 mb-6" style="background-color: var(--color-primary-subtle); border: 1px solid var(--color-primary)">
+    <div
+      v-if="isGymMode && gymSchedule && !isHoliday"
+      class="rounded-lg p-4 mb-6"
+      style="background-color: var(--color-primary-subtle); border: 1px solid var(--color-primary)"
+    >
       <div class="flex items-center space-x-2">
         <span class="text-lg">🏋️</span>
         <div>
           <p class="font-semibold" style="color: var(--color-primary)">Modo Gimnasio</p>
           <p class="text-sm" style="color: var(--color-text)">
             <template v-if="hasFreePass">
-              🎫 Free Pass — Gimnasio abierto de {{ gymSchedule.start }} a {{ gymSchedule.end }}
+              <!-- Free Pass con horario de gimnasio -->
+              🎫 Free Pass — Gimnasio abierto de {{ formatTime(gymSchedule.start) }} a
+              {{ formatTime(gymSchedule.end) }}
             </template>
-            <template v-else>
-              💰 Modo créditos — Cada clase cuesta créditos
-            </template>
+            <template v-else> 💰 Modo créditos — Cada clase cuesta créditos </template>
           </p>
         </div>
       </div>
     </div>
 
     <!-- Free pass: show schedule without booking buttons -->
-    <div v-if="isGymMode && hasFreePass && gymSchedule && !isHoliday" class="rounded-lg shadow p-6 mb-6" style="background-color: var(--color-surface)">
+    <div
+      v-if="isGymMode && hasFreePass && gymSchedule && !isHoliday"
+      class="rounded-lg shadow p-6 mb-6"
+      style="background-color: var(--color-surface)"
+    >
       <div class="flex items-center space-x-3">
         <span class="text-3xl">🎫</span>
         <div>
           <p class="font-semibold text-lg" style="color: var(--color-text)">Free Pass Activo</p>
-          <p style="color: var(--color-text-muted)">Podés asistir de {{ gymSchedule.start }} a {{ gymSchedule.end }}</p>
-          <p class="text-sm mt-1" style="color: var(--color-text-muted)">No necesitás reservar. Solo presentate en el horario.</p>
+          <p style="color: var(--color-text-muted)">
+            Podés asistir de {{ formatTime(gymSchedule.start) }} a {{ formatTime(gymSchedule.end) }}
+          </p>
+          <p class="text-sm mt-1" style="color: var(--color-text-muted)">
+            No necesitás reservar. Solo presentate en el horario.
+          </p>
         </div>
       </div>
     </div>
 
     <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-semibold capitalize" style="color: var(--color-text)">{{ selectedDateFormatted }}</h2>
-      <span v-if="filteredServices.length > 0" class="text-sm" style="color: var(--color-text-muted)">
+      <h2 class="text-lg font-semibold capitalize" style="color: var(--color-text)">
+        {{ selectedDateFormatted }}
+      </h2>
+      <span
+        v-if="filteredServices.length > 0"
+        class="text-sm"
+        style="color: var(--color-text-muted)"
+      >
         {{ filteredServices.length }} servicio(s)
       </span>
     </div>
 
     <SkeletonCard v-if="serviceStore.loading" :count="2" :lines="3" class="grid-cols-1" />
 
-    <div v-else-if="filteredServices.length === 0 && !isHoliday" class="rounded-lg shadow p-8 text-center" style="background-color: var(--color-surface)">
+    <div
+      v-else-if="filteredServices.length === 0 && !isHoliday"
+      class="rounded-lg shadow p-8 text-center"
+      style="background-color: var(--color-surface)"
+    >
       <p style="color: var(--color-text-muted)">No hay servicios este día</p>
-      <p class="text-sm mt-1" style="color: var(--color-text-muted)">Seleccioná otro día en el calendario</p>
+      <p class="text-sm mt-1" style="color: var(--color-text-muted)">
+        Seleccioná otro día en el calendario
+      </p>
     </div>
 
     <div v-else class="grid gap-4">
-      <div v-for="svc in filteredServices" :key="svc.id" class="rounded-lg shadow p-6" style="background-color: var(--color-surface)">
-        <div class="flex justify-between items-start">
+      <div
+        v-for="svc in filteredServices"
+        :key="svc.id"
+        class="rounded-lg shadow p-6"
+        style="background-color: var(--color-surface)"
+      >
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
           <div>
             <div class="flex items-center space-x-2 mb-1">
               <h3 class="text-lg font-semibold" style="color: var(--color-text)">{{ svc.name }}</h3>
               <span
                 class="text-lg cursor-help"
-                :title="svc.frequency === 'weekly' ? 'Se repite cada semana en los días seleccionados' : svc.frequency === 'appointment' ? 'Turnos individuales cada ' + svc.slot_interval_minutes + ' min' : 'Evento único el ' + svc.event_date"
+                :title="
+                  svc.frequency === 'weekly'
+                    ? 'Se repite cada semana en los días seleccionados'
+                    : svc.frequency === 'appointment'
+                      ? 'Turnos individuales cada ' + svc.slot_interval_minutes + ' min'
+                      : 'Evento único el ' + svc.event_date
+                "
               >
-                {{ svc.frequency === 'weekly' ? '🔄' : svc.frequency === 'appointment' ? '⏰' : '🎯' }}
+                {{
+                  svc.frequency === 'weekly' ? '🔄' : svc.frequency === 'appointment' ? '⏰' : '🎯'
+                }}
               </span>
             </div>
+            <!-- Horario del servicio -->
             <p style="color: var(--color-text-muted)">
-              {{ svc.start_time }} - {{ svc.end_time }}
-              <template v-if="svc.frequency === 'appointment'"> | Turnos cada {{ svc.slot_interval_minutes }} min</template>
+              {{ formatTime(svc.start_time) }} - {{ formatTime(svc.end_time) }}
+              <template v-if="svc.frequency === 'appointment'">
+                | Turnos cada {{ svc.slot_interval_minutes }} min</template
+              >
             </p>
             <p class="text-sm" style="color: var(--color-text-muted)">
-              {{ svc.professionals ? getProfessionalDisplayName(svc.professionals, companySettings?.show_alias || false) : '' }}
+              {{
+                svc.professionals
+                  ? getProfessionalDisplayName(
+                      svc.professionals,
+                      companySettings?.show_alias || false,
+                    )
+                  : ''
+              }}
             </p>
             <div class="mt-2 flex items-center space-x-2">
               <span class="text-sm">
@@ -455,16 +548,22 @@ const getModalityIcon = (a: boolean, v: boolean) => {
               </span>
             </div>
           </div>
-          <div class="flex space-x-2">
-            <!-- Gym mode + Free pass: sin botón de reserva -->
+          <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <!-- Gym mode + Free pass -->
             <template v-if="isGymMode && hasFreePass">
-              <span class="text-sm px-3 py-1 rounded" style="background-color: var(--color-primary-subtle); color: var(--color-primary)">
+              <span
+                class="text-sm px-3 py-2 rounded text-center"
+                style="background-color: var(--color-primary-subtle); color: var(--color-primary)"
+              >
                 🎫 Acceso libre
               </span>
             </template>
             <!-- Sesión cancelada -->
             <template v-else-if="cancelledServiceKeys.has(svc.id)">
-              <span class="px-4 py-2 rounded-lg text-sm font-medium" style="background-color: #fef2f2; color: #991b1b">
+              <span
+                class="px-4 py-2 rounded-lg text-sm font-medium text-center"
+                style="background-color: #fef2f2; color: #991b1b"
+              >
                 ⛔ Sesión cancelada
               </span>
             </template>
@@ -472,19 +571,19 @@ const getModalityIcon = (a: boolean, v: boolean) => {
             <template v-else-if="bookedServiceIds.has(svc.id)">
               <router-link
                 to="/my-bookings"
-                class="px-4 py-2 rounded-lg text-sm font-medium cursor-pointer"
+                class="px-4 py-2 rounded-lg text-sm font-medium cursor-pointer text-center"
                 style="background-color: #fef3c7; color: #92400e"
               >
                 ✓ Ya reservado
               </router-link>
             </template>
-            <!-- Créditos: botones de reserva normales -->
+            <!-- Botones de reserva -->
             <template v-else>
               <button
                 v-if="svc.allows_in_person"
                 @click="handleReserve(svc.id, 'in_person')"
                 :disabled="bookingStore.loading || isHoliday"
-                class="px-4 py-2 rounded-lg text-white disabled:opacity-50 text-sm cursor-pointer"
+                class="px-4 py-2 rounded-lg text-white disabled:opacity-50 text-sm cursor-pointer w-full sm:w-auto"
                 :style="{ backgroundColor: 'var(--color-primary)' }"
               >
                 🏠 Reservar Presencial
@@ -493,7 +592,7 @@ const getModalityIcon = (a: boolean, v: boolean) => {
                 v-if="svc.allows_virtual"
                 @click="handleReserve(svc.id, 'virtual')"
                 :disabled="bookingStore.loading || isHoliday"
-                class="px-4 py-2 rounded-lg text-white disabled:opacity-50 text-sm cursor-pointer"
+                class="px-4 py-2 rounded-lg text-white disabled:opacity-50 text-sm cursor-pointer w-full sm:w-auto"
                 style="background-color: #16a34a"
               >
                 💻 Reservar Virtual
@@ -501,12 +600,22 @@ const getModalityIcon = (a: boolean, v: boolean) => {
             </template>
           </div>
         </div>
-        <div v-if="bookingStore.error && selectedServiceId === svc.id" class="mt-2 text-sm" style="color: #dc2626">
+        <div
+          v-if="bookingStore.error && selectedServiceId === svc.id"
+          class="mt-2 text-sm"
+          style="color: #dc2626"
+        >
           {{ bookingStore.error }}
         </div>
       </div>
     </div>
 
-    <TimeWindowModal :show="showModal" :tipo="modalTipo" :minutos-para-clase="modalMinutos" :ventana="modalVentana" @close="showModal = false" />
+    <TimeWindowModal
+      :show="showModal"
+      :tipo="modalTipo"
+      :minutos-para-clase="modalMinutos"
+      :ventana="modalVentana"
+      @close="showModal = false"
+    />
   </div>
 </template>

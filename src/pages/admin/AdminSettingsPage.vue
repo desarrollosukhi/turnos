@@ -8,7 +8,7 @@ import { useTheme } from '@/composables/useTheme'
 import ToastMessage from '@/components/ToastMessage.vue'
 import ConfirmModal from '@/components/ConfirmModal.vue'
 import ImageCropper from '@/components/ImageCropper.vue'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import type { Holiday, Company, CompanySettings } from '@/types'
 
 const authStore = useAuthStore()
@@ -50,17 +50,29 @@ const gymSchedule = ref<Record<GymDayName, GymDay>>({
   domingo: { active: false, start: '09:00', end: '18:00' },
 })
 
+const openPopover = ref<string | null>(null)
+
+function togglePopover(id: string) {
+  openPopover.value = openPopover.value === id ? null : id
+}
+
+function closePopovers() {
+  openPopover.value = null
+}
+
+onMounted(() => document.addEventListener('click', closePopovers))
+onUnmounted(() => document.removeEventListener('click', closePopovers))
 async function syncHolidaysFromAPI() {
   if (!authStore.companyId) return
   syncing.value = true
   try {
     const currentYear = new Date().getFullYear()
     const national = await fetchHolidaysForYears([currentYear, currentYear + 1])
-    const natDates = new Set(national.map(h => h.date))
+    const natDates = new Set(national.map((h) => h.date))
     nationalDates.value = natDates
     // Crear feriados que no existen
     for (const h of national) {
-      if (!holidays.value.some(exist => exist.date === h.date)) {
+      if (!holidays.value.some((exist) => exist.date === h.date)) {
         await HolidayService.create({ company_id: authStore.companyId, date: h.date, name: h.name })
       }
     }
@@ -69,11 +81,13 @@ async function syncHolidaysFromAPI() {
     toastMessage.value = e.message || 'Error al sincronizar feriados'
     toastType.value = 'error'
     showToast.value = true
-  } finally { syncing.value = false }
+  } finally {
+    syncing.value = false
+  }
 }
 
 const gymDays = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'] as const
-type GymDayName = typeof gymDays[number]
+type GymDayName = (typeof gymDays)[number]
 
 onMounted(async () => {
   if (!authStore.companyId) return
@@ -95,8 +109,9 @@ onMounted(async () => {
     toastMessage.value = e.message || 'Error al cargar configuración'
     toastType.value = 'error'
     showToast.value = true
+  } finally {
+    loading.value = false
   }
-  finally { loading.value = false }
 })
 
 async function handleSaveName() {
@@ -111,8 +126,9 @@ async function handleSaveName() {
     toastMessage.value = e.message || 'Error al guardar nombre'
     toastType.value = 'error'
     showToast.value = true
+  } finally {
+    saving.value = false
   }
-  finally { saving.value = false }
 }
 
 async function handleSaveSettings() {
@@ -131,8 +147,9 @@ async function handleSaveSettings() {
     toastMessage.value = e.message || 'Error al guardar configuración'
     toastType.value = 'error'
     showToast.value = true
+  } finally {
+    saving.value = false
   }
-  finally { saving.value = false }
 }
 
 function handleFileSelect(file: File) {
@@ -252,7 +269,11 @@ async function handleDeleteLogo() {
 async function handleAddHoliday() {
   if (!authStore.companyId || !holidayForm.value.date || !holidayForm.value.name.trim()) return
   try {
-    await HolidayService.create({ company_id: authStore.companyId, date: holidayForm.value.date, name: holidayForm.value.name.trim() })
+    await HolidayService.create({
+      company_id: authStore.companyId,
+      date: holidayForm.value.date,
+      name: holidayForm.value.name.trim(),
+    })
     holidays.value = await HolidayService.getAll(authStore.companyId)
     holidayForm.value = { date: '', name: '' }
     showAddHoliday.value = false
@@ -265,8 +286,10 @@ async function handleAddHoliday() {
 
 async function handleDeleteHoliday(id: string) {
   if (!confirm('¿Eliminar?')) return
-  try { await HolidayService.delete(id); holidays.value = holidays.value.filter(h => h.id !== id) }
-  catch (e: any) {
+  try {
+    await HolidayService.delete(id)
+    holidays.value = holidays.value.filter((h) => h.id !== id)
+  } catch (e: any) {
     toastMessage.value = e.message || 'Error al eliminar feriado'
     toastType.value = 'error'
     showToast.value = true
@@ -274,8 +297,10 @@ async function handleDeleteHoliday(id: string) {
 }
 
 async function handleToggleHoliday(h: Holiday) {
-  try { await HolidayService.toggleActive(h.id, !h.active); holidays.value = holidays.value.map(x => x.id === h.id ? { ...x, active: !x.active } : x) }
-  catch (e: any) {
+  try {
+    await HolidayService.toggleActive(h.id, !h.active)
+    holidays.value = holidays.value.map((x) => (x.id === h.id ? { ...x, active: !x.active } : x))
+  } catch (e: any) {
     toastMessage.value = e.message || 'Error al actualizar feriado'
     toastType.value = 'error'
     showToast.value = true
@@ -286,7 +311,7 @@ const filteredHolidays = computed(() => {
   const sorted = [...holidays.value].sort((a, b) => a.date.localeCompare(b.date))
   if (!holidaySearch.value.trim()) return sorted
   const q = holidaySearch.value.toLowerCase()
-  return sorted.filter(h => h.name.toLowerCase().includes(q) || h.date.includes(q))
+  return sorted.filter((h) => h.name.toLowerCase().includes(q) || h.date.includes(q))
 })
 
 const visibleHolidays = computed(() => {
@@ -294,18 +319,20 @@ const visibleHolidays = computed(() => {
   return filteredHolidays.value.slice(0, 4)
 })
 
-const hasMoreHolidays = computed(() => filteredHolidays.value.length > 4 && !holidaysExpanded.value && !holidaySearch.value.trim())
+const hasMoreHolidays = computed(
+  () => filteredHolidays.value.length > 4 && !holidaysExpanded.value && !holidaySearch.value.trim(),
+)
 
 async function handleDeactivateAll() {
   if (!authStore.companyId) return
-  const activeHolidays = holidays.value.filter(h => h.active)
+  const activeHolidays = holidays.value.filter((h) => h.active)
   if (activeHolidays.length === 0) return
   togglingAll.value = true
   try {
     for (const h of activeHolidays) {
       await HolidayService.toggleActive(h.id, false)
     }
-    holidays.value = holidays.value.map(h => ({ ...h, active: false }))
+    holidays.value = holidays.value.map((h) => ({ ...h, active: false }))
     toastMessage.value = `${activeHolidays.length} feriados desactivados`
     toastType.value = 'success'
     showToast.value = true
@@ -313,19 +340,21 @@ async function handleDeactivateAll() {
     toastMessage.value = e.message || 'Error al desactivar feriados'
     toastType.value = 'error'
     showToast.value = true
-  } finally { togglingAll.value = false }
+  } finally {
+    togglingAll.value = false
+  }
 }
 
 async function handleActivateAll() {
   if (!authStore.companyId) return
-  const inactiveHolidays = holidays.value.filter(h => !h.active)
+  const inactiveHolidays = holidays.value.filter((h) => !h.active)
   if (inactiveHolidays.length === 0) return
   togglingAll.value = true
   try {
     for (const h of inactiveHolidays) {
       await HolidayService.toggleActive(h.id, true)
     }
-    holidays.value = holidays.value.map(h => ({ ...h, active: true }))
+    holidays.value = holidays.value.map((h) => ({ ...h, active: true }))
     toastMessage.value = `${inactiveHolidays.length} feriados activados`
     toastType.value = 'success'
     showToast.value = true
@@ -333,15 +362,17 @@ async function handleActivateAll() {
     toastMessage.value = e.message || 'Error al activar feriados'
     toastType.value = 'error'
     showToast.value = true
-  } finally { togglingAll.value = false }
+  } finally {
+    togglingAll.value = false
+  }
 }
 
-const allActive = computed(() => holidays.value.length > 0 && holidays.value.every(h => h.active))
+const allActive = computed(() => holidays.value.length > 0 && holidays.value.every((h) => h.active))
 const togglingAll = ref(false)
 
 async function handleSelectPreset(presetId: string) {
   if (!authStore.companyId || !settingsData.value) return
-  const preset = themePresets.find(p => p.id === presetId)
+  const preset = themePresets.find((p) => p.id === presetId)
   if (!preset) return
   settingsData.value.theme_preset = presetId
   settingsData.value.primary_color = preset.primary_color
@@ -361,70 +392,155 @@ async function handleSelectPreset(presetId: string) {
 
 <template>
   <div>
-    <ToastMessage :show="showToast" :message="toastMessage" :type="toastType" @close="showToast = false" />
+    <ToastMessage
+      :show="showToast"
+      :message="toastMessage"
+      :type="toastType"
+      @close="showToast = false"
+    />
 
     <h1 class="text-2xl font-bold mb-6" style="color: var(--color-text)">Configuración</h1>
 
-    <div v-if="loading" class="text-center py-8"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div></div>
+    <div v-if="loading" class="text-center py-8">
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+    </div>
 
     <div v-else class="space-y-6">
-
       <!-- Logo -->
       <div class="rounded-lg shadow p-6" style="background-color: var(--color-surface)">
-        <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text)">Logo de la empresa</h2>
+        <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text)">
+          Logo de la empresa
+        </h2>
 
         <!-- Logo actual (sin preview pendiente) -->
         <div v-if="settingsData?.logo_url && !previewUrl" class="mb-4">
           <div class="group relative inline-block cursor-pointer">
-            <img :src="settingsData.logo_url" alt="Logo actual" class="h-32 w-auto object-contain border rounded-lg p-2 transition-opacity" :style="{ borderColor: 'var(--color-border)' }" />
-            <button @click="handleEditExistingLogo" class="absolute top-1/2 -translate-y-1/2 -left-3 rounded-full w-7 h-7 flex items-center justify-center text-xs cursor-pointer md:opacity-0 md:group-hover:opacity-100 transition-opacity" style="background-color: var(--color-primary); color: white" title="Editar logo">✏️</button>
-            <button @click="confirmDeleteLogo" class="absolute top-1/2 -translate-y-1/2 -right-3 rounded-full w-7 h-7 flex items-center justify-center text-xs cursor-pointer md:opacity-0 md:group-hover:opacity-100 transition-opacity" style="background-color: #dc2626; color: white" title="Eliminar logo">×</button>
+            <img
+              :src="settingsData.logo_url"
+              alt="Logo actual"
+              class="h-32 w-auto object-contain border rounded-lg p-2 transition-opacity"
+              :style="{ borderColor: 'var(--color-border)' }"
+            />
+            <button
+              @click="handleEditExistingLogo"
+              class="absolute top-1/2 -translate-y-1/2 -left-3 rounded-full w-7 h-7 flex items-center justify-center text-xs cursor-pointer md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+              style="background-color: var(--color-primary); color: white"
+              title="Editar logo"
+            >
+              ✏️
+            </button>
+            <button
+              @click="confirmDeleteLogo"
+              class="absolute top-1/2 -translate-y-1/2 -right-3 rounded-full w-7 h-7 flex items-center justify-center text-xs cursor-pointer md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+              style="background-color: #dc2626; color: white"
+              title="Eliminar logo"
+            >
+              ×
+            </button>
           </div>
-          <p class="text-xs mt-2" style="color: var(--color-text-muted)">Logo actual — pasá el mouse para editar o eliminar</p>
+          <p class="text-xs mt-2" style="color: var(--color-text-muted)">
+            Logo actual — pasá el mouse para editar o eliminar
+          </p>
         </div>
 
         <!-- Preview del archivo seleccionado -->
         <div v-if="previewUrl" class="mb-4">
           <p class="text-sm font-medium mb-2" style="color: var(--color-text)">Vista previa:</p>
           <div class="relative inline-block">
-            <img :src="previewUrl" alt="Preview" class="h-32 w-auto object-contain border rounded-lg p-2" :style="{ borderColor: 'var(--color-primary)' }" />
-            <button v-if="selectedFile?.type !== 'image/svg+xml'" @click="showCropper = true" class="absolute -top-2 -left-2 rounded-full w-6 h-6 flex items-center justify-center text-xs cursor-pointer hover:opacity-80" style="background-color: var(--color-primary); color: white" title="Editar imagen">✏️</button>
-            <button @click="clearSelection" class="absolute -top-2 -right-2 rounded-full w-6 h-6 flex items-center justify-center text-xs cursor-pointer hover:opacity-80" style="background-color: #dc2626; color: white" title="Descartar">×</button>
+            <img
+              :src="previewUrl"
+              alt="Preview"
+              class="h-32 w-auto object-contain border rounded-lg p-2"
+              :style="{ borderColor: 'var(--color-primary)' }"
+            />
+            <button
+              v-if="selectedFile?.type !== 'image/svg+xml'"
+              @click="showCropper = true"
+              class="absolute -top-2 -left-2 rounded-full w-6 h-6 flex items-center justify-center text-xs cursor-pointer hover:opacity-80"
+              style="background-color: var(--color-primary); color: white"
+              title="Editar imagen"
+            >
+              ✏️
+            </button>
+            <button
+              @click="clearSelection"
+              class="absolute -top-2 -right-2 rounded-full w-6 h-6 flex items-center justify-center text-xs cursor-pointer hover:opacity-80"
+              style="background-color: #dc2626; color: white"
+              title="Descartar"
+            >
+              ×
+            </button>
           </div>
-          <p v-if="selectedFile" class="text-xs mt-1" style="color: var(--color-text-muted)">{{ selectedFile.name }} ({{ (selectedFile.size / 1024).toFixed(0) }} KB)</p>
+          <p v-if="selectedFile" class="text-xs mt-1" style="color: var(--color-text-muted)">
+            {{ selectedFile.name }} ({{ (selectedFile.size / 1024).toFixed(0) }} KB)
+          </p>
         </div>
 
         <!-- Drag & drop zone (solo si no hay logo ni preview) -->
-        <div v-if="!settingsData?.logo_url && !previewUrl"
+        <div
+          v-if="!settingsData?.logo_url && !previewUrl"
           @dragover.prevent="isDragging = true"
           @dragleave="isDragging = false"
           @drop.prevent="handleDrop"
           class="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors"
           :style="{
             borderColor: isDragging ? 'var(--color-primary)' : 'var(--color-border)',
-            backgroundColor: isDragging ? 'var(--color-primary-subtle)' : 'transparent'
+            backgroundColor: isDragging ? 'var(--color-primary-subtle)' : 'transparent',
           }"
         >
           <div class="text-4xl mb-2">📁</div>
-          <p class="text-sm mb-2" style="color: var(--color-text-muted)">
-            Arrastrá tu logo aquí o
-          </p>
+          <p class="text-sm mb-2" style="color: var(--color-text-muted)">Arrastrá tu logo aquí o</p>
           <label class="inline-block cursor-pointer">
-            <span class="px-4 py-2 rounded-lg text-white cursor-pointer hover:opacity-90" :style="{ backgroundColor: 'var(--color-primary)' }">Elegir archivo</span>
-            <input type="file" accept=".png,.jpg,.jpeg,.svg" @change="handleFileInput" class="hidden" />
+            <span
+              class="px-4 py-2 rounded-lg text-white cursor-pointer hover:opacity-90"
+              :style="{ backgroundColor: 'var(--color-primary)' }"
+              >Elegir archivo</span
+            >
+            <input
+              type="file"
+              accept=".png,.jpg,.jpeg,.svg"
+              @change="handleFileInput"
+              class="hidden"
+            />
           </label>
-          <p class="text-xs mt-3" style="color: var(--color-text-muted)">PNG, JPG o SVG. Máximo 2MB.</p>
+          <p class="text-xs mt-3" style="color: var(--color-text-muted)">
+            PNG, JPG o SVG. Máximo 2MB.
+          </p>
         </div>
 
         <!-- Barra de progreso / Botones -->
         <div v-if="selectedFile" class="mt-4">
-          <div v-if="uploading" class="w-full h-2 rounded-full overflow-hidden" style="background-color: var(--color-primary-subtle)">
-            <div class="h-full rounded-full animate-pulse" style="background-color: var(--color-primary); width: 60%"></div>
+          <div
+            v-if="uploading"
+            class="w-full h-2 rounded-full overflow-hidden"
+            style="background-color: var(--color-primary-subtle)"
+          >
+            <div
+              class="h-full rounded-full animate-pulse"
+              style="background-color: var(--color-primary); width: 60%"
+            ></div>
           </div>
-          <div v-if="uploading" class="text-sm mt-1" style="color: var(--color-primary)">Subiendo logo...</div>
+          <div v-if="uploading" class="text-sm mt-1" style="color: var(--color-primary)">
+            Subiendo logo...
+          </div>
           <div v-if="!uploading" class="flex space-x-3 mt-2">
-            <button @click="handleUploadLogo" class="px-4 py-2 rounded-lg text-white cursor-pointer hover:opacity-90" :style="{ backgroundColor: 'var(--color-primary)' }">Subir logo</button>
-            <button @click="clearSelection" class="px-4 py-2 rounded-lg cursor-pointer" :style="{ backgroundColor: 'var(--color-primary-subtle)', color: 'var(--color-text)' }">Cancelar</button>
+            <button
+              @click="handleUploadLogo"
+              class="px-4 py-2 rounded-lg text-white cursor-pointer hover:opacity-90"
+              :style="{ backgroundColor: 'var(--color-primary)' }"
+            >
+              Subir logo
+            </button>
+            <button
+              @click="clearSelection"
+              class="px-4 py-2 rounded-lg cursor-pointer"
+              :style="{
+                backgroundColor: 'var(--color-primary-subtle)',
+                color: 'var(--color-text)',
+              }"
+            >
+              Cancelar
+            </button>
           </div>
         </div>
 
@@ -452,44 +568,131 @@ async function handleSelectPreset(presetId: string) {
       />
 
       <!-- Nombre de la empresa -->
-      <div v-if="companyData" class="rounded-lg shadow p-6" style="background-color: var(--color-surface)">
-        <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text)">Nombre de la empresa</h2>
+      <div
+        v-if="companyData"
+        class="rounded-lg shadow p-6"
+        style="background-color: var(--color-surface)"
+      >
+        <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text)">
+          Nombre de la empresa
+        </h2>
         <div class="flex items-center space-x-4">
-          <input v-model="companyData.name" type="text" class="flex-1 px-3 py-2 border rounded-lg" :style="{ borderColor: 'var(--color-border)' }" />
-          <button @click="handleSaveName" :disabled="saving || !companyData?.name?.trim()" class="px-4 py-2 rounded-lg text-white disabled:opacity-50" :style="{ backgroundColor: 'var(--color-primary)' }">{{ saving ? 'Guardando...' : 'Guardar' }}</button>
+          <input
+            v-model="companyData.name"
+            type="text"
+            class="flex-1 px-3 py-2 border rounded-lg"
+            :style="{ borderColor: 'var(--color-border)' }"
+          />
+          <button
+            @click="handleSaveName"
+            :disabled="saving || !companyData?.name?.trim()"
+            class="px-4 py-2 rounded-lg text-white disabled:opacity-50"
+            :style="{ backgroundColor: 'var(--color-primary)' }"
+          >
+            {{ saving ? 'Guardando...' : 'Guardar' }}
+          </button>
         </div>
       </div>
 
       <!-- Ventana de tiempo -->
-      <div v-if="settingsData" class="rounded-lg shadow p-6" style="background-color: var(--color-surface)">
-        <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text)">Ventana de tiempo</h2>
+      <div
+        v-if="settingsData"
+        class="rounded-lg shadow p-6"
+        style="background-color: var(--color-surface)"
+      >
+        <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text)">
+          Ventana de tiempo
+        </h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
-            <label class="block text-sm font-medium mb-1" style="color: var(--color-text)">Minutos para reserva</label>
-            <input v-model.number="settingsData.minutos_ventana_reserva" type="number" min="0" class="w-full px-3 py-2 border rounded-lg" :style="{ borderColor: 'var(--color-border)' }" />
+            <label class="block text-sm font-medium mb-1" style="color: var(--color-text)"
+              >Minutos para reserva</label
+            >
+            <input
+              v-model.number="settingsData.minutos_ventana_reserva"
+              type="number"
+              min="0"
+              class="w-full px-3 py-2 border rounded-lg"
+              :style="{ borderColor: 'var(--color-border)' }"
+            />
           </div>
           <div>
-            <label class="block text-sm font-medium mb-1" style="color: var(--color-text)">Minutos para cancelación</label>
-            <input v-model.number="settingsData.minutos_ventana_cancelacion" type="number" min="0" class="w-full px-3 py-2 border rounded-lg" :style="{ borderColor: 'var(--color-border)' }" />
+            <label class="block text-sm font-medium mb-1" style="color: var(--color-text)"
+              >Minutos para cancelación</label
+            >
+            <input
+              v-model.number="settingsData.minutos_ventana_cancelacion"
+              type="number"
+              min="0"
+              class="w-full px-3 py-2 border rounded-lg"
+              :style="{ borderColor: 'var(--color-border)' }"
+            />
           </div>
         </div>
         <div class="mb-4">
-          <label class="block text-sm font-medium mb-1" style="color: var(--color-text)">WhatsApp del profe</label>
-          <input v-model="settingsData.whatsapp" type="text" placeholder="Ej: 5491155551234" class="w-full px-3 py-2 border rounded-lg" :style="{ borderColor: 'var(--color-border)' }" />
+          <label class="block text-sm font-medium mb-1" style="color: var(--color-text)"
+            >WhatsApp del espacio</label
+          >
+          <input
+            v-model="settingsData.whatsapp"
+            type="text"
+            placeholder="Ej: 5491155551234"
+            class="w-full px-3 py-2 border rounded-lg"
+            :style="{ borderColor: 'var(--color-border)' }"
+          />
         </div>
         <div class="mb-4 flex items-center space-x-3">
-          <button @click="settingsData.show_alias = !settingsData.show_alias" :class="[settingsData.show_alias ? 'bg-blue-600' : 'bg-gray-300', 'relative inline-flex h-6 w-11 items-center rounded-full transition-colors']">
-            <span :class="[settingsData.show_alias ? 'translate-x-6' : 'translate-x-1', 'inline-block h-4 w-4 transform rounded-full bg-white transition-transform']" />
+          <button
+            @click="settingsData.show_alias = !settingsData.show_alias"
+            :class="[
+              settingsData.show_alias ? 'bg-blue-600' : 'bg-gray-300',
+              'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+            ]"
+          >
+            <span
+              :class="[
+                settingsData.show_alias ? 'translate-x-6' : 'translate-x-1',
+                'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+              ]"
+            />
           </button>
-          <div><p class="text-sm font-medium" style="color: var(--color-text)">Mostrar alias</p></div>
+          <div class="flex items-center space-x-1">
+            <p class="text-sm font-medium" style="color: var(--color-text)">Mostrar alias</p>
+            <span class="relative">
+              <span
+                class="flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold cursor-help"
+                style="background-color: var(--color-primary-subtle); color: var(--color-primary)"
+                @click.stop="togglePopover('alias')"
+                >?</span
+              >
+              <span
+                v-if="openPopover === 'alias'"
+                class="absolute z-10 bottom-full left-0 mb-1 w-56 p-2 text-xs rounded-lg shadow-lg text-white font-normal"
+                style="background-color: #1f2937"
+                @click.stop
+              >
+                Al activarlo, se mostrará el apodo del profesor/profesional en vez de su nombre
+                real.
+              </span>
+            </span>
+          </div>
         </div>
-        <button @click="handleSaveSettings" :disabled="saving" class="px-4 py-2 rounded-lg text-white disabled:opacity-50" :style="{ backgroundColor: 'var(--color-primary)' }">{{ saving ? 'Guardando...' : 'Guardar' }}</button>
+        <button
+          @click="handleSaveSettings"
+          :disabled="saving"
+          class="px-4 py-2 rounded-lg text-white disabled:opacity-50"
+          :style="{ backgroundColor: 'var(--color-primary)' }"
+        >
+          {{ saving ? 'Guardando...' : 'Guardar' }}
+        </button>
       </div>
 
       <!-- Tema / Apariencia -->
       <div class="rounded-lg shadow p-6" style="background-color: var(--color-surface)">
         <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text)">Apariencia</h2>
-        <p class="text-sm mb-4" style="color: var(--color-text-muted)">Elegí un tema predefinido para personalizar la apariencia de tu negocio.</p>
+        <p class="text-sm mb-4" style="color: var(--color-text-muted)">
+          Elegí un tema predefinido para personalizar la apariencia de tu negocio.
+        </p>
         <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
           <button
             v-for="preset in themePresets"
@@ -497,100 +700,281 @@ async function handleSelectPreset(presetId: string) {
             @click="handleSelectPreset(preset.id)"
             :class="[
               'p-3 rounded-lg border-2 text-left transition-all hover:shadow-md',
-              settingsData?.theme_preset === preset.id ? 'border-blue-500 shadow-md' : 'border-gray-200'
+              settingsData?.theme_preset === preset.id
+                ? 'border-blue-500 shadow-md'
+                : 'border-gray-200',
             ]"
           >
             <div class="flex items-center space-x-2 mb-2">
-              <div class="w-6 h-6 rounded-full" :style="{ backgroundColor: preset.primary_color }"></div>
-              <div class="w-6 h-6 rounded-full" :style="{ backgroundColor: preset.background_color, border: '1px solid #e5e7eb' }"></div>
+              <div
+                class="w-6 h-6 rounded-full"
+                :style="{ backgroundColor: preset.primary_color }"
+              ></div>
+              <div
+                class="w-6 h-6 rounded-full"
+                :style="{ backgroundColor: preset.background_color, border: '1px solid #e5e7eb' }"
+              ></div>
             </div>
-            <p class="text-sm font-medium" :style="{ color: preset.text_color }">{{ preset.name }}</p>
+            <p class="text-sm font-medium" :style="{ color: preset.text_color }">
+              {{ preset.name }}
+            </p>
           </button>
         </div>
       </div>
 
       <!-- Modo Gimnasio -->
-      <div v-if="settingsData" class="rounded-lg shadow p-6" style="background-color: var(--color-surface)">
+      <div
+        v-if="settingsData"
+        class="rounded-lg shadow p-6"
+        style="background-color: var(--color-surface)"
+      >
         <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text)">Modo Gimnasio</h2>
         <div class="mb-4 flex items-center space-x-3">
-          <button @click="settingsData.gym_mode = !settingsData.gym_mode" :class="[settingsData.gym_mode ? 'bg-blue-600' : 'bg-gray-300', 'relative inline-flex h-6 w-11 items-center rounded-full transition-colors']">
-            <span :class="[settingsData.gym_mode ? 'translate-x-6' : 'translate-x-1', 'inline-block h-4 w-4 transform rounded-full bg-white transition-transform']" />
+          <button
+            @click="settingsData.gym_mode = !settingsData.gym_mode"
+            :class="[
+              settingsData.gym_mode ? 'bg-blue-600' : 'bg-gray-300',
+              'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+            ]"
+          >
+            <span
+              :class="[
+                settingsData.gym_mode ? 'translate-x-6' : 'translate-x-1',
+                'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+              ]"
+            />
           </button>
           <div>
             <p class="text-sm font-medium" style="color: var(--color-text)">Modo Gimnasio</p>
-            <p class="text-xs" style="color: var(--color-text-muted)">Activa Free Pass y horario del gimnasio</p>
+            <p class="text-xs" style="color: var(--color-text-muted)">
+              Activa Free Pass y horario del gimnasio
+            </p>
           </div>
         </div>
 
         <!-- Horario del gimnasio -->
         <div v-if="settingsData.gym_mode" class="mt-4">
-          <p class="text-sm font-medium mb-2" style="color: var(--color-text)">Horario del gimnasio</p>
+          <p class="text-sm font-medium mb-2" style="color: var(--color-text)">
+            Horario del gimnasio
+          </p>
           <div class="space-y-2">
             <div v-for="day in gymDays" :key="day" class="flex items-center space-x-3">
               <input type="checkbox" v-model="gymSchedule[day].active" class="rounded" />
-              <span class="w-20 text-sm capitalize" style="color: var(--color-text)">{{ day }}</span>
-              <input v-if="gymSchedule[day].active" v-model="gymSchedule[day].start" type="time" class="px-2 py-1 border rounded text-sm" :style="{ borderColor: 'var(--color-border)' }" />
+              <span class="w-20 text-sm capitalize" style="color: var(--color-text)">{{
+                day
+              }}</span>
+              <input
+                v-if="gymSchedule[day].active"
+                v-model="gymSchedule[day].start"
+                type="time"
+                class="px-2 py-1 border rounded text-sm"
+                :style="{ borderColor: 'var(--color-border)' }"
+              />
               <span v-if="gymSchedule[day].active" style="color: var(--color-text-muted)">a</span>
-              <input v-if="gymSchedule[day].active" v-model="gymSchedule[day].end" type="time" class="px-2 py-1 border rounded text-sm" :style="{ borderColor: 'var(--color-border)' }" />
+              <input
+                v-if="gymSchedule[day].active"
+                v-model="gymSchedule[day].end"
+                type="time"
+                class="px-2 py-1 border rounded text-sm"
+                :style="{ borderColor: 'var(--color-border)' }"
+              />
             </div>
           </div>
-          <p class="text-xs mt-2" style="color: var(--color-text-muted)">Los clientes con Free Pass pueden asistir en estos horarios</p>
+          <p class="text-xs mt-2" style="color: var(--color-text-muted)">
+            Los clientes con Free Pass pueden asistir en estos horarios
+          </p>
         </div>
 
-        <button @click="handleSaveSettings" :disabled="saving" class="mt-4 px-4 py-2 rounded-lg text-white disabled:opacity-50" :style="{ backgroundColor: 'var(--color-primary)' }">{{ saving ? 'Guardando...' : 'Guardar' }}</button>
+        <button
+          @click="handleSaveSettings"
+          :disabled="saving"
+          class="mt-4 px-4 py-2 rounded-lg text-white disabled:opacity-50"
+          :style="{ backgroundColor: 'var(--color-primary)' }"
+        >
+          {{ saving ? 'Guardando...' : 'Guardar' }}
+        </button>
       </div>
 
       <!-- Modo de Clientes -->
-      <div v-if="settingsData" class="rounded-lg shadow p-6" style="background-color: var(--color-surface)">
-        <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text)">Modo de Clientes</h2>
+      <div
+        v-if="settingsData"
+        class="rounded-lg shadow p-6"
+        style="background-color: var(--color-surface)"
+      >
+        <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text)">
+          Modo de Clientes
+        </h2>
         <div class="grid grid-cols-2 gap-3 mb-4">
-          <button @click="settingsData.customer_mode = 'MEMBER'"
-            :class="['p-3 rounded-lg border-2 text-left transition-all', settingsData.customer_mode === 'MEMBER' ? 'border-blue-500 shadow-md' : 'border-gray-200']">
-            <div class="text-2xl mb-1">👤</div>
-            <div class="text-sm font-medium" style="color: var(--color-text)">Member</div>
-            <div class="text-xs" style="color: var(--color-text-muted)">Clientes con login y créditos</div>
+          <button
+            @click="settingsData.customer_mode = 'MEMBER'"
+            :class="[
+              'relative p-3 rounded-lg border-2 text-left transition-all',
+              settingsData.customer_mode === 'MEMBER'
+                ? 'border-blue-500 shadow-md'
+                : 'border-gray-200',
+            ]"
+          >
+            <div class="flex items-start justify-between">
+              <div class="text-2xl mb-1">👤</div>
+              <span class="relative">
+                <span
+                  class="flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold cursor-help"
+                  style="background-color: var(--color-primary-subtle); color: var(--color-primary)"
+                  @click.stop="togglePopover('member')"
+                  >?</span
+                >
+                <span
+                  v-if="openPopover === 'member'"
+                  class="absolute z-10 top-full right-0 mt-1 w-48 p-2 text-xs rounded-lg shadow-lg text-white normal-case font-normal"
+                  style="background-color: #1f2937"
+                  @click.stop
+                >
+                  Los clientes se registran con cuenta propia (email y contraseña) y usan créditos
+                  para reservar sus clases.
+                </span>
+              </span>
+            </div>
+            <div class="text-sm font-medium" style="color: var(--color-text)">Miembro</div>
+            <div class="text-xs" style="color: var(--color-text-muted)">
+              Clientes con login y créditos
+            </div>
           </button>
-          <button @click="settingsData.customer_mode = 'GUEST'"
-            :class="['p-3 rounded-lg border-2 text-left transition-all', settingsData.customer_mode === 'GUEST' ? 'border-blue-500 shadow-md' : 'border-gray-200']">
-            <div class="text-2xl mb-1">🎫</div>
-            <div class="text-sm font-medium" style="color: var(--color-text)">Guest</div>
+
+          <button
+            @click="settingsData.customer_mode = 'GUEST'"
+            :class="[
+              'relative p-3 rounded-lg border-2 text-left transition-all',
+              settingsData.customer_mode === 'GUEST'
+                ? 'border-blue-500 shadow-md'
+                : 'border-gray-200',
+            ]"
+          >
+            <div class="flex items-start justify-between">
+              <div class="text-2xl mb-1">🎫</div>
+              <span class="relative">
+                <span
+                  class="flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold cursor-help"
+                  style="background-color: var(--color-primary-subtle); color: var(--color-primary)"
+                  @click.stop="togglePopover('guest')"
+                  >?</span
+                >
+                <span
+                  v-if="openPopover === 'guest'"
+                  class="absolute z-10 top-full right-0 mt-1 w-48 p-2 text-xs rounded-lg shadow-lg text-white normal-case font-normal"
+                  style="background-color: #1f2937"
+                  @click.stop
+                >
+                  Los clientes reservan solo con nombre y teléfono, sin necesidad de crear una
+                  cuenta.
+                </span>
+              </span>
+            </div>
+            <div class="text-sm font-medium" style="color: var(--color-text)">Invitado</div>
             <div class="text-xs" style="color: var(--color-text-muted)">Solo nombre y teléfono</div>
           </button>
         </div>
-        <button @click="handleSaveSettings" :disabled="saving" class="px-4 py-2 rounded-lg text-white disabled:opacity-50" :style="{ backgroundColor: 'var(--color-primary)' }">{{ saving ? 'Guardando...' : 'Guardar' }}</button>
+        <button
+          @click="handleSaveSettings"
+          :disabled="saving"
+          class="px-4 py-2 rounded-lg text-white disabled:opacity-50"
+          :style="{ backgroundColor: 'var(--color-primary)' }"
+        >
+          {{ saving ? 'Guardando...' : 'Guardar' }}
+        </button>
       </div>
 
       <!-- Permisos del Profesional -->
-      <div v-if="settingsData" class="rounded-lg shadow p-6" style="background-color: var(--color-surface)">
-        <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text)">Permisos del Profesional</h2>
+      <div
+        v-if="settingsData"
+        class="rounded-lg shadow p-6"
+        style="background-color: var(--color-surface)"
+      >
+        <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text)">
+          Permisos del Profesional
+        </h2>
         <div class="mb-4 flex items-center space-x-3">
-          <button @click="settingsData.manage_credits = !settingsData.manage_credits" :class="[settingsData.manage_credits ? 'bg-blue-600' : 'bg-gray-300', 'relative inline-flex h-6 w-11 items-center rounded-full transition-colors']">
-            <span :class="[settingsData.manage_credits ? 'translate-x-6' : 'translate-x-1', 'inline-block h-4 w-4 transform rounded-full bg-white transition-transform']" />
+          <button
+            @click="settingsData.manage_credits = !settingsData.manage_credits"
+            :class="[
+              settingsData.manage_credits ? 'bg-blue-600' : 'bg-gray-300',
+              'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+            ]"
+          >
+            <span
+              :class="[
+                settingsData.manage_credits ? 'translate-x-6' : 'translate-x-1',
+                'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+              ]"
+            />
           </button>
           <div>
-            <p class="text-sm font-medium" style="color: var(--color-text)">Puede gestionar créditos</p>
-            <p class="text-xs" style="color: var(--color-text-muted)">Si está desactivado, solo el admin puede dar/quitar créditos</p>
+            <p class="text-sm font-medium" style="color: var(--color-text)">
+              Puede gestionar créditos
+            </p>
+            <p class="text-xs" style="color: var(--color-text-muted)">
+              Si está desactivado, solo el admin puede dar/quitar créditos
+            </p>
           </div>
         </div>
-        <button @click="handleSaveSettings" :disabled="saving" class="px-4 py-2 rounded-lg text-white disabled:opacity-50" :style="{ backgroundColor: 'var(--color-primary)' }">{{ saving ? 'Guardando...' : 'Guardar' }}</button>
+        <button
+          @click="handleSaveSettings"
+          :disabled="saving"
+          class="px-4 py-2 rounded-lg text-white disabled:opacity-50"
+          :style="{ backgroundColor: 'var(--color-primary)' }"
+        >
+          {{ saving ? 'Guardando...' : 'Guardar' }}
+        </button>
       </div>
 
       <!-- Historia Clínica -->
-      <div v-if="settingsData" class="rounded-lg shadow p-6" style="background-color: var(--color-surface)">
-        <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text)">Historia Clínica</h2>
+      <div
+        v-if="settingsData"
+        class="rounded-lg shadow p-6"
+        style="background-color: var(--color-surface)"
+      >
+        <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text)">
+          Historia Clínica
+        </h2>
         <div class="mb-4 flex items-center space-x-3">
-          <button @click="settingsData.enable_clinical_history = !settingsData.enable_clinical_history" :class="[settingsData.enable_clinical_history ? 'bg-blue-600' : 'bg-gray-300', 'relative inline-flex h-6 w-11 items-center rounded-full transition-colors']">
-            <span :class="[settingsData.enable_clinical_history ? 'translate-x-6' : 'translate-x-1', 'inline-block h-4 w-4 transform rounded-full bg-white transition-transform']" />
+          <button
+            @click="settingsData.enable_clinical_history = !settingsData.enable_clinical_history"
+            :class="[
+              settingsData.enable_clinical_history ? 'bg-blue-600' : 'bg-gray-300',
+              'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+            ]"
+          >
+            <span
+              :class="[
+                settingsData.enable_clinical_history ? 'translate-x-6' : 'translate-x-1',
+                'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+              ]"
+            />
           </button>
           <div>
-            <p class="text-sm font-medium" style="color: var(--color-text)">Habilitar historia clínica</p>
-            <p class="text-xs" style="color: var(--color-text-muted)">Los profesionales podrán registrar historial de cada cliente</p>
+            <p class="text-sm font-medium" style="color: var(--color-text)">
+              Habilitar historia clínica
+            </p>
+            <p class="text-xs" style="color: var(--color-text-muted)">
+              Los profesionales podrán registrar historial de cada cliente
+            </p>
           </div>
         </div>
-        <p v-if="settingsData.enable_clinical_history" class="text-sm mb-4" style="color: var(--color-text-muted)">
-          Los profesionales verán un botón "📋 Historia" en cada reserva para registrar el historial del cliente.
+        <p
+          v-if="settingsData.enable_clinical_history"
+          class="text-sm mb-4"
+          style="color: var(--color-text-muted)"
+        >
+          Los profesionales verán un botón "📋 Historia" en cada reserva para registrar el historial
+          del cliente.
         </p>
-        <button @click="handleSaveSettings" :disabled="saving" class="px-4 py-2 rounded-lg text-white disabled:opacity-50" :style="{ backgroundColor: 'var(--color-primary)' }">{{ saving ? 'Guardando...' : 'Guardar' }}</button>
+        <button
+          @click="handleSaveSettings"
+          :disabled="saving"
+          class="px-4 py-2 rounded-lg text-white disabled:opacity-50"
+          :style="{ backgroundColor: 'var(--color-primary)' }"
+        >
+          {{ saving ? 'Guardando...' : 'Guardar' }}
+        </button>
       </div>
 
       <!-- Feriados -->
@@ -598,48 +982,104 @@ async function handleSelectPreset(presetId: string) {
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-lg font-semibold" style="color: var(--color-text)">Feriados</h2>
           <div class="space-x-2">
-            <button @click="syncHolidaysFromAPI" :disabled="syncing" class="px-4 py-2 rounded-lg text-white text-sm disabled:opacity-50" style="background-color: #16a34a">
+            <button
+              @click="syncHolidaysFromAPI"
+              :disabled="syncing"
+              class="px-4 py-2 rounded-lg text-white text-sm disabled:opacity-50"
+              style="background-color: #16a34a"
+            >
               {{ syncing ? 'Sincronizando...' : '🔄 Sincronizar' }}
             </button>
-            <button @click="showAddHoliday = !showAddHoliday" class="px-4 py-2 rounded-lg text-white text-sm" :style="{ backgroundColor: 'var(--color-primary)' }">+ Agregar</button>
+            <button
+              @click="showAddHoliday = !showAddHoliday"
+              class="px-4 py-2 rounded-lg text-white text-sm"
+              :style="{ backgroundColor: 'var(--color-primary)' }"
+            >
+              + Agregar
+            </button>
           </div>
         </div>
 
         <p class="text-sm mb-4" style="color: var(--color-text-muted)">
-          Los feriados nacionales se cargan automáticamente desde ArgentinaDatos. Desactivá los que no apliquen a tu negocio.
+          Los feriados nacionales se cargan automáticamente desde ArgentinaDatos. Desactivá los que
+          no apliquen a tu negocio.
         </p>
 
-        <div v-if="showAddHoliday" class="rounded-lg p-4 mb-4" style="background-color: var(--color-primary-subtle)">
+        <div
+          v-if="showAddHoliday"
+          class="rounded-lg p-4 mb-4"
+          style="background-color: var(--color-primary-subtle)"
+        >
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium mb-1" style="color: var(--color-text)">Fecha</label>
-              <input v-model="holidayForm.date" type="date" class="w-full px-3 py-2 border rounded-lg" :style="{ borderColor: 'var(--color-border)' }" />
+              <label class="block text-sm font-medium mb-1" style="color: var(--color-text)"
+                >Fecha</label
+              >
+              <input
+                v-model="holidayForm.date"
+                type="date"
+                class="w-full px-3 py-2 border rounded-lg"
+                :style="{ borderColor: 'var(--color-border)' }"
+              />
             </div>
             <div>
-              <label class="block text-sm font-medium mb-1" style="color: var(--color-text)">Nombre</label>
-              <input v-model="holidayForm.name" type="text" placeholder="Ej: Navidad" class="w-full px-3 py-2 border rounded-lg" :style="{ borderColor: 'var(--color-border)' }" />
+              <label class="block text-sm font-medium mb-1" style="color: var(--color-text)"
+                >Nombre</label
+              >
+              <input
+                v-model="holidayForm.name"
+                type="text"
+                placeholder="Ej: Navidad"
+                class="w-full px-3 py-2 border rounded-lg"
+                :style="{ borderColor: 'var(--color-border)' }"
+              />
             </div>
           </div>
-          <button @click="handleAddHoliday" :disabled="!holidayForm.date || !holidayForm.name.trim()" class="mt-3 px-4 py-2 rounded-lg text-white text-sm disabled:opacity-50" :style="{ backgroundColor: 'var(--color-primary)' }">Guardar feriado</button>
+          <button
+            @click="handleAddHoliday"
+            :disabled="!holidayForm.date || !holidayForm.name.trim()"
+            class="mt-3 px-4 py-2 rounded-lg text-white text-sm disabled:opacity-50"
+            :style="{ backgroundColor: 'var(--color-primary)' }"
+          >
+            Guardar feriado
+          </button>
         </div>
 
-        <div v-if="holidays.length === 0" class="text-center py-4" style="color: var(--color-text-muted)">No hay feriados.</div>
+        <div
+          v-if="holidays.length === 0"
+          class="text-center py-4"
+          style="color: var(--color-text-muted)"
+        >
+          No hay feriados.
+        </div>
 
         <template v-else>
           <!-- Buscador + Desactivar todos -->
           <div class="flex items-center space-x-3 mb-4">
             <div class="flex-1 relative">
-              <input v-model="holidaySearch" type="text" placeholder="Buscar feriado..."
+              <input
+                v-model="holidaySearch"
+                type="text"
+                placeholder="Buscar feriado..."
                 class="w-full pl-9 pr-3 py-2 border rounded-lg text-sm"
-                :style="{ borderColor: 'var(--color-border)' }" />
-              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style="color: var(--color-text-muted)">🔍</span>
+                :style="{ borderColor: 'var(--color-border)' }"
+              />
+              <span
+                class="absolute left-3 top-1/2 -translate-y-1/2 text-sm"
+                style="color: var(--color-text-muted)"
+                >🔍</span
+              >
             </div>
-            <button @click="allActive ? handleDeactivateAll() : handleActivateAll()"
+            <button
+              @click="allActive ? handleDeactivateAll() : handleActivateAll()"
               :disabled="holidays.length === 0 || togglingAll"
               class="px-4 py-2 rounded-lg text-sm whitespace-nowrap disabled:opacity-50 transition-all cursor-pointer disabled:cursor-wait"
-              :style="allActive
-                ? 'background-color: #fef2f2; color: #991b1b; border: 1px solid #fecaca'
-                : 'background-color: #f0fdf4; color: #166534; border: 1px solid #bbf7d0'">
+              :style="
+                allActive
+                  ? 'background-color: #fef2f2; color: #991b1b; border: 1px solid #fecaca'
+                  : 'background-color: #f0fdf4; color: #166534; border: 1px solid #bbf7d0'
+              "
+            >
               <span v-if="togglingAll" class="inline-flex items-center space-x-1">
                 <span class="animate-spin">⏳</span>
                 <span>{{ allActive ? 'Desactivando...' : 'Activando...' }}</span>
@@ -650,39 +1090,70 @@ async function handleSelectPreset(presetId: string) {
 
           <!-- Lista -->
           <div class="divide-y">
-            <div v-for="h in visibleHolidays" :key="h.id" class="flex justify-between items-center py-3">
+            <div
+              v-for="h in visibleHolidays"
+              :key="h.id"
+              class="flex justify-between items-center py-3"
+            >
               <div class="flex items-center space-x-3">
-                <button @click="handleToggleHoliday(h)" :class="[h.active ? 'bg-green-500' : 'bg-gray-300', 'relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer']">
-                  <span :class="[h.active ? 'translate-x-6' : 'translate-x-1', 'inline-block h-4 w-4 transform rounded-full bg-white transition-transform']" />
+                <button
+                  @click="handleToggleHoliday(h)"
+                  :class="[
+                    h.active ? 'bg-green-500' : 'bg-gray-300',
+                    'relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer',
+                  ]"
+                >
+                  <span
+                    :class="[
+                      h.active ? 'translate-x-6' : 'translate-x-1',
+                      'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+                    ]"
+                  />
                 </button>
                 <div>
                   <div class="flex items-center space-x-2">
                     <p class="font-medium" style="color: var(--color-text)">{{ h.name }}</p>
-                    <span v-if="nationalDates.has(h.date)" class="px-2 py-0.5 text-xs rounded-full" style="background-color: #dbeafe; color: #1e40af">Nacional</span>
+                    <span
+                      v-if="nationalDates.has(h.date)"
+                      class="px-2 py-0.5 text-xs rounded-full"
+                      style="background-color: #dbeafe; color: #1e40af"
+                      >Nacional</span
+                    >
                   </div>
                   <p class="text-sm" style="color: var(--color-text-muted)">{{ h.date }}</p>
                 </div>
               </div>
-              <button @click="handleDeleteHoliday(h.id)" style="color: #dc2626" class="text-sm hover:underline">Eliminar</button>
+              <button
+                @click="handleDeleteHoliday(h.id)"
+                style="color: #dc2626"
+                class="text-sm hover:underline"
+              >
+                Eliminar
+              </button>
             </div>
           </div>
 
           <!-- Expandir / Colapsar -->
           <div v-if="hasMoreHolidays || holidaysExpanded" class="text-center mt-3">
-            <button v-if="hasMoreHolidays" @click="holidaysExpanded = true"
+            <button
+              v-if="hasMoreHolidays"
+              @click="holidaysExpanded = true"
               class="text-sm px-4 py-1.5 rounded-lg cursor-pointer hover:opacity-80"
-              style="color: var(--color-primary); background-color: var(--color-primary-subtle)">
+              style="color: var(--color-primary); background-color: var(--color-primary-subtle)"
+            >
               Ver todos ({{ filteredHolidays.length }})
             </button>
-            <button v-else-if="holidaysExpanded && filteredHolidays.length > 4" @click="holidaysExpanded = false"
+            <button
+              v-else-if="holidaysExpanded && filteredHolidays.length > 4"
+              @click="holidaysExpanded = false"
               class="text-sm px-4 py-1.5 rounded-lg cursor-pointer hover:opacity-80"
-              style="color: var(--color-primary); background-color: var(--color-primary-subtle)">
+              style="color: var(--color-primary); background-color: var(--color-primary-subtle)"
+            >
               Mostrar menos
             </button>
           </div>
         </template>
       </div>
-
     </div>
   </div>
 </template>

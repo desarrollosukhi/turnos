@@ -12,6 +12,48 @@ interface ChangelogEntry {
 
 const entries = ref<ChangelogEntry[]>([
   {
+    version: 'v1.1.1',
+    date: '2026-08-07',
+    changes: [
+      {
+        category: 'Calendario mensual',
+        items: [
+          'Fix: encabezado de días de semana ahora empieza en Domingo, alineado con la numeración real de la grilla',
+        ],
+      },
+      {
+        category: 'Horarios y fechas — Formato consistente',
+        items: [
+          'Todos los horarios se muestran como HH:mm, sin segundos (antes HH:mm:ss)',
+          'Fechas de eventos únicos se muestran en formato local es-AR (ej. "lun. 11 ago.")',
+          'Aplicado en: servicios disponibles del cliente, próximas reservas del home, y listado de servicios del admin',
+        ],
+      },
+      {
+        category: 'Reservas del cliente — Responsive',
+        items: [
+          'Botones de reserva (Presencial / Virtual) rediseñados para mobile: se apilan en columna y ocupan el ancho completo',
+          'Card de servicio pasa de fila a columna en pantallas chicas para evitar que el contenido se apriete',
+        ],
+      },
+      {
+        category: 'Configuración — Modo de Clientes',
+        items: [
+          'Etiquetas traducidas al español: "Miembro" y "Invitado" (antes MEMBER/GUEST)',
+          'Popover con ícono "?" explicando qué significa cada modo',
+          'Popover con ícono "?" en el toggle "Mostrar alias" explicando que reemplaza el nombre del profesional por su apodo',
+          'Popovers funcionan con tap/click (no solo hover), para uso correcto en mobile, con cierre automático al tocar afuera',
+        ],
+      },
+      {
+        category: 'Admin Servicios',
+        items: [
+          'Fix: error de parseo en botón "+ Nuevo" (statements múltiples en @click) — refactorizado a función toggleForm',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v1.1.0',
     date: '2026-08-05',
     changes: [
@@ -50,21 +92,15 @@ const entries = ref<ChangelogEntry[]>([
       },
       {
         category: 'Créditos — Paginación',
-        items: [
-          'Botón "Ver más" para historial de movimientos (carga de 10 en 10)',
-        ],
+        items: ['Botón "Ver más" para historial de movimientos (carga de 10 en 10)'],
       },
       {
         category: 'Calendario',
-        items: [
-          'Fix: indicador de reserva solo se muestra si no hay sesión cancelada',
-        ],
+        items: ['Fix: indicador de reserva solo se muestra si no hay sesión cancelada'],
       },
       {
         category: 'Admin Reservas',
-        items: [
-          'Excluir servicios ya cancelados del modal de cancelación de sesión',
-        ],
+        items: ['Excluir servicios ya cancelados del modal de cancelación de sesión'],
       },
       {
         category: 'Dependencias',
@@ -193,7 +229,9 @@ function toggleEntry(version: string) {
 <template>
   <div>
     <h1 class="text-2xl font-bold mb-6" style="color: var(--color-text)">Changelog</h1>
-    <p class="mb-6" style="color: var(--color-text-muted)">Historial de versiones y cambios de la plataforma.</p>
+    <p class="mb-6" style="color: var(--color-text-muted)">
+      Historial de versiones y cambios de la plataforma.
+    </p>
 
     <div class="space-y-4">
       <div
@@ -209,7 +247,10 @@ function toggleEntry(version: string) {
           style="background-color: var(--color-surface)"
         >
           <div class="flex items-center space-x-3">
-            <span class="px-3 py-1 rounded-full text-sm font-bold text-white" style="background-color: var(--color-primary)">
+            <span
+              class="px-3 py-1 rounded-full text-sm font-bold text-white"
+              style="background-color: var(--color-primary)"
+            >
               {{ entry.version }}
             </span>
             <span class="text-sm" style="color: var(--color-text-muted)">{{ entry.date }}</span>
@@ -220,11 +261,22 @@ function toggleEntry(version: string) {
         </button>
 
         <!-- Content -->
-        <div v-if="expandedEntry === entry.version" class="px-6 pb-6" style="border-top: 1px solid var(--color-border)">
+        <div
+          v-if="expandedEntry === entry.version"
+          class="px-6 pb-6"
+          style="border-top: 1px solid var(--color-border)"
+        >
           <div v-for="change in entry.changes" :key="change.category" class="mt-4">
-            <h3 class="font-semibold mb-2" style="color: var(--color-text)">{{ change.category }}</h3>
+            <h3 class="font-semibold mb-2" style="color: var(--color-text)">
+              {{ change.category }}
+            </h3>
             <ul class="space-y-1 ml-4">
-              <li v-for="(item, idx) in change.items" :key="idx" class="text-sm" style="color: var(--color-text-muted)">
+              <li
+                v-for="(item, idx) in change.items"
+                :key="idx"
+                class="text-sm"
+                style="color: var(--color-text-muted)"
+              >
                 • {{ item }}
               </li>
             </ul>
