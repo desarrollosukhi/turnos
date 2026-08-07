@@ -7,6 +7,7 @@ import { getBusinessLabels, getProfessionalDisplayName } from '@/types'
 import SkeletonCard from '@/components/SkeletonCard.vue'
 import { onMounted, ref, computed } from 'vue'
 import type { AnnouncementWithDetails } from '@/types'
+import { formatDate, formatTime } from '@/utils/dateUtils'
 
 const authStore = useAuthStore()
 const balance = ref(0)
@@ -22,15 +23,6 @@ interface UpcomingBooking {
     end_time: string
     professionals: { name: string; alias: string | null } | null
   } | null
-}
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr + 'T12:00:00')
-  return date.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' })
-}
-
-function formatTime(time: string | null | undefined): string {
-  if (!time) return ''
-  return time.slice(0, 5) // "14:30:00" -> "14:30"
 }
 
 const upcomingBookings = ref<UpcomingBooking[]>([])

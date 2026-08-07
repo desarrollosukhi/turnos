@@ -13,6 +13,7 @@ import TimeWindowModal from '@/components/TimeWindowModal.vue'
 import HolidayBanner from '@/components/HolidayBanner.vue'
 import SkeletonCard from '@/components/SkeletonCard.vue'
 import type { BookingWindow } from '@/types'
+import { formatTime } from '@/utils/dateUtils'
 
 const serviceStore = useServiceStore()
 const bookingStore = useBookingStore()
@@ -98,10 +99,6 @@ const filteredServices = computed(() => {
   return result
 })
 
-function formatTime(time: string | null | undefined): string {
-  if (!time) return ''
-  return time.slice(0, 5) // "14:30:00" -> "14:30"
-}
 // Profesionales únicos de los servicios disponibles
 const uniqueProfessionals = computed(() => {
   const map = new Map<string, string>()

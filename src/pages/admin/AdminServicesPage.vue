@@ -6,6 +6,7 @@ import { getBusinessLabels, FREQUENCY_OPTIONS, ALL_DAYS } from '@/types'
 import SkeletonCard from '@/components/SkeletonCard.vue'
 import { ref, computed, onMounted } from 'vue'
 import type { Professional, DiaSemana, Frequency } from '@/types'
+import { formatDate, formatTime } from '@/utils/dateUtils'
 
 const authStore = useAuthStore()
 const serviceStore = useServiceStore()
@@ -35,16 +36,6 @@ const form = ref({
   in_person_capacity: null as number | null,
   virtual_capacity: null as number | null,
 })
-
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr + 'T12:00:00')
-  return date.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' })
-}
-
-function formatTime(time: string | null | undefined): string {
-  if (!time) return ''
-  return time.slice(0, 5) // "14:30:00" -> "14:30"
-}
 
 onMounted(async () => {
   await Promise.all([serviceStore.fetchServices(), fetchProfessionals()])
